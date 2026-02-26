@@ -16,6 +16,7 @@ from azure.ai.evaluation import AzureAIProject, evaluate
 from src.config import get_settings
 from src.continuous_evaluation.evaluators import get_builtin_evaluators, get_custom_evaluators
 from src.continuous_evaluation.metrics import format_results_table, summarize_scores
+from src.continuous_evaluation.retry import retry_with_backoff
 from src.continuous_evaluation.thresholds import any_failures, check_all_thresholds
 
 logger = logging.getLogger(__name__)
@@ -67,11 +68,14 @@ async def run_pr_evaluation() -> dict[str, float]:
     evaluators = {**get_builtin_evaluators(model_config), **get_custom_evaluators()}
     logger.info("Running PR eval with %d evaluators against %s", len(evaluators), DATASET_PATH)
 
-    results = evaluate(
+    results = retry_with_backoff(
+        evaluate,
         data=str(DATASET_PATH),
         evaluators=evaluators,
         azure_ai_project=azure_ai_project,
         evaluation_name="ce-pr-evaluation",
+        max_retries=2,
+        base_delay=10.0,
     )
 
     scores = summarize_scores(results)

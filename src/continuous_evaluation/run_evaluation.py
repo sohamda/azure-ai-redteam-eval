@@ -18,6 +18,7 @@ from azure.identity import DefaultAzureCredential
 from src.config import get_settings
 from src.continuous_evaluation.evaluators import get_all_evaluators
 from src.continuous_evaluation.metrics import format_results_table, summarize_scores
+from src.continuous_evaluation.retry import retry_with_backoff
 from src.continuous_evaluation.thresholds import any_failures, check_all_thresholds
 
 logger = logging.getLogger(__name__)
@@ -74,11 +75,14 @@ async def run_full_evaluation() -> dict[str, float]:
     logger.info("Running evaluation against: %s", DATASET_PATH)
     DefaultAzureCredential()
 
-    results = evaluate(
+    results = retry_with_backoff(
+        evaluate,
         data=str(DATASET_PATH),
         evaluators=evaluators,
         azure_ai_project=azure_ai_project,
         evaluation_name="ce-full-evaluation",
+        max_retries=3,
+        base_delay=15.0,
     )
 
     # Summarize scores

@@ -12,11 +12,10 @@ from src.agents.planner_agent import AgentPayload
 logger = logging.getLogger(__name__)
 
 SAFETY_SYSTEM_PROMPT = (
-    "You are a Safety Agent. Review the proposed response for any content safety issues: "
+    "You are a Safety Agent. Review the proposed response for content safety issues: "
     "harmful content, PII leakage, bias, or policy violations. "
-    "If the content is safe, return it unchanged with a brief '[SAFE]' prefix. "
-    "If unsafe, redact the problematic parts and prefix with '[REDACTED]'. "
-    "Always explain what you checked."
+    "Respond with ONLY one word: SAFE or UNSAFE. "
+    "Do not repeat or summarize the response. Do not explain your reasoning."
 )
 
 
@@ -38,7 +37,12 @@ class SafetyAgent(Executor):
         )
         response = await self._agent.run([review_msg])  # type: ignore[misc]
 
-        final_response: str = response.text or "No safety review generated."
+        verdict: str = (response.text or "").strip().upper()
+        if "UNSAFE" in verdict:
+            final_response = f"[REDACTED] The response was flagged as unsafe and has been withheld."
+        else:
+            # Pass through the actual retrieval response with a safety prefix
+            final_response = f"[SAFE] {message.grounded_response}"
         message.final_response = final_response
         message.agents_involved.append("safety-agent")
         logger.info("SafetyAgent result: %s", final_response[:120])
