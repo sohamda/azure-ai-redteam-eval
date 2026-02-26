@@ -27,6 +27,15 @@ param aiFoundryProject string
 @description('AI Foundry endpoint')
 param aiFoundryEndpoint string
 
+@description('Managed identity client ID (for DefaultAzureCredential)')
+param identityClientId string
+
+@description('Azure subscription ID')
+param subscriptionId string
+
+@description('Resource group name')
+param resourceGroupName string
+
 // ---------------------------------------------------------------------------
 // App Service Plan
 // ---------------------------------------------------------------------------
@@ -72,7 +81,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: 'PYTHON|3.12'
-      appCommandLine: 'uvicorn src.app:app --host 0.0.0.0 --port 8000'
+      appCommandLine: 'startup.sh'
       ftpsState: 'Disabled'
       appSettings: [
         { name: 'AZURE_OPENAI_ENDPOINT', value: openAIEndpoint }
@@ -81,8 +90,12 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'AZURE_AI_FOUNDRY_PROJECT', value: aiFoundryProject }
         { name: 'AZURE_AI_FOUNDRY_ENDPOINT', value: aiFoundryEndpoint }
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+        { name: 'AZURE_CLIENT_ID', value: identityClientId }
+        { name: 'AZURE_SUBSCRIPTION_ID', value: subscriptionId }
+        { name: 'AZURE_RESOURCE_GROUP', value: resourceGroupName }
         { name: 'LOG_LEVEL', value: 'INFO' }
         { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'true' }
+        { name: 'WEBSITE_PORT', value: '8000' }
       ]
     }
   }

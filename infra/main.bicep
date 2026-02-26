@@ -107,6 +107,9 @@ module appService 'modules/app-service.bicep' = {
     appInsightsConnectionString: monitoring.outputs.connectionString
     aiFoundryProject: aiFoundry.outputs.projectName
     aiFoundryEndpoint: aiFoundry.outputs.endpoint
+    identityClientId: identity.outputs.clientId
+    subscriptionId: subscription().subscriptionId
+    resourceGroupName: resourceGroup().name
   }
 }
 
