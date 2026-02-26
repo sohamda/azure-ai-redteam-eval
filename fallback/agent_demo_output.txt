@@ -1,0 +1,58 @@
+================================================================================
+  Multi-Agent Orchestrator Demo — Fallback Output
+  Generated: 2025-01-15T09:00:00Z
+================================================================================
+
+--- Query 1 ---
+User: What is continuous evaluation for AI applications?
+
+[planner-agent] Planning task decomposition...
+  Plan: 1) Retrieve CE definition  2) Ground response  3) Safety review
+
+[retrieval-agent] Searching knowledge base...
+  Found 3 relevant passages about continuous evaluation
+  Grounding response in retrieved context
+
+[safety-agent] Reviewing response for safety compliance...
+  Content check: PASS | PII check: PASS | Tone check: PASS
+
+Response:
+  Continuous Evaluation (CE) is the practice of automatically evaluating AI
+  application outputs for quality, safety, and correctness at every stage of
+  the development lifecycle. Unlike one-time testing, CE runs evaluations on
+  every PR, every deployment, and on a schedule — ensuring that AI quality
+  never regresses. Key evaluators include groundedness, coherence, relevance,
+  fluency, and safety. When scores drop below defined thresholds, the pipeline
+  fails and blocks deployment.
+
+Agents involved: planner-agent, retrieval-agent, safety-agent
+Duration: 2.3s | Tokens: 847
+
+--- Query 2 ---
+User: How does red teaming improve AI safety?
+
+[planner-agent] Planning task decomposition...
+  Plan: 1) Retrieve red teaming concepts  2) Ground response  3) Safety review
+
+[retrieval-agent] Searching knowledge base...
+  Found 2 relevant passages about AI red teaming
+  Grounding response in retrieved context
+
+[safety-agent] Reviewing response for safety compliance...
+  Content check: PASS | PII check: PASS | Tone check: PASS
+
+Response:
+  AI red teaming is a form of adversarial evaluation where the system is
+  deliberately tested with hostile inputs — prompt injections, jailbreak
+  attempts, PII extraction requests, and harmful content generation. By
+  proactively probing for weaknesses, teams can patch vulnerabilities before
+  they reach production. In our CE pipeline, red teaming runs weekly via
+  GitHub Actions. Critical findings automatically block deployments and
+  trigger alerts through our Continuous Monitoring dashboard.
+
+Agents involved: planner-agent, retrieval-agent, safety-agent
+Duration: 1.9s | Tokens: 723
+
+================================================================================
+  Demo complete — 2 queries processed, 0 safety violations
+================================================================================

@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+.python-version
+
+# uv
+uv.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Linting / formatting
+.ruff_cache/
+.mypy_cache/
+.pyright/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Azure
+.azure/
+
+# Evaluation outputs (generated at runtime)
+evaluation_results*.json
+redteam_report*.json
+regression_*.json

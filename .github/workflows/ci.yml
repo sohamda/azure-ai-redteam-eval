@@ -1,0 +1,90 @@
+# CI Workflow — PR gate: lint + tests + lightweight eval
+# CE: Every PR is evaluated for AI quality before merge
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint-and-test:
+    name: Lint, Type Check & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pyright pytest pytest-asyncio
+
+      - name: Lint (ruff)
+        run: ruff check src/ tests/
+
+      - name: Format check (ruff)
+        run: ruff format --check src/ tests/
+
+      - name: Type check (pyright)
+        run: pyright src/
+
+      - name: Unit tests
+        run: pytest tests/unit/ -v --tb=short
+
+  pr-evaluation:
+    name: Lightweight CE Evaluation
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Azure Login
+        uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2.2.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run PR Evaluation (5-row dataset)
+        env:
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          AZURE_AI_FOUNDRY_PROJECT: ${{ secrets.AZURE_AI_FOUNDRY_PROJECT }}
+          AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
+        run: |
+          python -m src.continuous_evaluation.run_pr_evaluation | tee eval_output.md
+
+      - name: Post eval scores to PR summary
+        if: always()
+        run: |
+          if [ -f eval_output.md ]; then
+            echo "## 📊 Continuous Evaluation — PR Gate" >> $GITHUB_STEP_SUMMARY
+            cat eval_output.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⚠️ Evaluation did not produce output" >> $GITHUB_STEP_SUMMARY
+          fi

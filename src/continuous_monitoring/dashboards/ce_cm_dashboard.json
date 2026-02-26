@@ -1,0 +1,192 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Continuous Evaluation & Monitoring Dashboard\n\nReal-time visibility into AI application quality, health, and safety.\n\n---"
+      },
+      "name": "title"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 1. Evaluation Trends (CE)\n\nGroundedness, Coherence, Relevance, and Safety scores over time — from Continuous Evaluation runs."
+      },
+      "name": "ce-section-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name startswith 'ce.score.'\n| extend evaluator = tostring(customDimensions.evaluator)\n| summarize avg(value) by evaluator, bin(timestamp, 1h)\n| render timechart",
+        "size": 0,
+        "title": "Evaluation Score Trends",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart",
+        "chartSettings": {
+          "yAxis": ["avg_value"],
+          "ySettings": {
+            "min": 1,
+            "max": 5
+          }
+        }
+      },
+      "name": "eval-score-trends"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name startswith 'ce.score.'\n| extend evaluator = tostring(customDimensions.evaluator)\n| summarize latest_score=arg_max(timestamp, value) by evaluator\n| project evaluator, score=value, timestamp\n| order by evaluator asc",
+        "size": 0,
+        "title": "Latest Evaluation Scores",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
+      },
+      "name": "eval-latest-scores"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == 'ce.score.average'\n| summarize avg_score=avg(value) by bin(timestamp, 1h)\n| render areachart",
+        "size": 0,
+        "title": "Average Evaluation Score Over Time",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "areachart",
+        "chartSettings": {
+          "ySettings": {
+            "min": 1,
+            "max": 5
+          }
+        }
+      },
+      "name": "eval-average-trend"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 2. Agent Health (CM)\n\nLatency percentiles, error rates, and token usage from the multi-agent system."
+      },
+      "name": "cm-section-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == 'agent.request.duration'\n| summarize p50=percentile(value, 50), p95=percentile(value, 95), p99=percentile(value, 99) by bin(timestamp, 5m)\n| render timechart",
+        "size": 0,
+        "title": "Agent Latency Percentiles (ms)",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "agent-latency"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == 'agent.error.count'\n| summarize errors=sum(value) by bin(timestamp, 15m)\n| render barchart",
+        "size": 0,
+        "title": "Agent Error Count",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      },
+      "name": "agent-errors"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == 'agent.token.usage'\n| extend agent_name = tostring(customDimensions['agent.name'])\n| summarize total_tokens=sum(value) by agent_name, bin(timestamp, 1h)\n| render timechart",
+        "size": 0,
+        "title": "Token Usage by Agent",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "name": "agent-tokens"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name == 'agent.request.count'\n| extend agent_name = tostring(customDimensions['agent.name'])\n| summarize requests=sum(value) by agent_name, bin(timestamp, 1h)\n| render barchart",
+        "size": 0,
+        "title": "Request Count by Agent",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      },
+      "name": "agent-requests"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n## 3. Alerts & Regressions (CE + CM)\n\nActive alerts, score regressions, and safety flag history."
+      },
+      "name": "alerts-section-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name startswith 'ce.redteam.'\n| extend category = tostring(customDimensions.category), result = tostring(customDimensions.result)\n| summarize count() by category, result\n| render barchart",
+        "size": 0,
+        "title": "Red Team Results by Category",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      },
+      "name": "redteam-results"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = tostring(customDimensions.evaluator)\n| summarize latest=arg_max(timestamp, value), previous=arg_min(timestamp, value) by evaluator\n| extend delta = latest_value - previous_value\n| project evaluator, latest_score=latest_value, previous_score=previous_value, delta\n| order by delta asc",
+        "size": 0,
+        "title": "Score Regressions (Latest vs Previous)",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
+      },
+      "name": "score-regressions"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

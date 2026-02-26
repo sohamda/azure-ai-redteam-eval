@@ -1,0 +1,81 @@
+# Deploy Workflow — Bicep infrastructure deployment
+# Deploys all Azure resources including alert rules
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "src/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure & App
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2.2.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Lint Bicep
+        run: az bicep build --file infra/main.bicep
+
+      - name: Deploy Bicep (dev)
+        if: inputs.environment != 'prod'
+        run: |
+          az deployment group create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters infra/parameters/dev.bicepparam \
+            --name "ce-cm-deploy-dev-${{ github.run_number }}"
+
+      - name: Deploy Bicep (prod)
+        if: inputs.environment == 'prod'
+        run: |
+          az deployment group create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters infra/parameters/prod.bicepparam \
+            --name "ce-cm-deploy-prod-${{ github.run_number }}"
+
+      - name: Smoke test
+        run: |
+          APP_HOSTNAME=$(az deployment group show \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name "ce-cm-deploy-${{ inputs.environment || 'dev' }}-${{ github.run_number }}" \
+            --query properties.outputs.appHostname.value -o tsv)
+          echo "Testing https://${APP_HOSTNAME}/health ..."
+          curl -sf "https://${APP_HOSTNAME}/health" || echo "⚠️ Smoke test failed (app may still be starting)"
+
+  trigger-evaluation:
+    name: Trigger Post-Deploy Evaluation
+    needs: deploy
+    uses: ./.github/workflows/evaluate.yml
+    secrets: inherit

@@ -1,0 +1,74 @@
+[project]
+name = "azure-ai-redteam-eval"
+version = "0.1.0"
+description = "Continuous Evaluation & Monitoring for AI Applications — demo repo for a 15-minute talk"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    # Multi-Agent Framework
+    "agent-framework-azure-ai>=1.0.0rc2",
+    "agent-framework-core>=1.0.0rc2",
+    # Azure SDKs
+    "azure-identity>=1.19.0",
+    "azure-ai-evaluation[redteam]>=1.0.0",
+    # API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # Observability
+    "opentelemetry-api>=1.28.0",
+    "opentelemetry-sdk>=1.28.0",
+    "azure-monitor-opentelemetry>=1.6.0",
+    # Config
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.8.0",
+    "pyright>=1.1.390",
+    "httpx>=0.27.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# ---------- Ruff ----------
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------- Pyright ----------
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+exclude = ["src/agents"]
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+reportUntypedBaseClass = false
+reportUntypedFunctionDecorator = false
+
+# ---------- Pytest ----------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

@@ -1,0 +1,84 @@
+# Evaluate Workflow — Full Continuous Evaluation post-deploy
+# CE: Full eval + regression check + score tracking
+
+name: Evaluate
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: "0 6 * * 1-5" # Weekdays at 6 AM UTC
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  full-evaluation:
+    name: Full CE Run + Regression Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2.2.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run Full Evaluation (golden dataset)
+        env:
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          AZURE_AI_FOUNDRY_PROJECT: ${{ secrets.AZURE_AI_FOUNDRY_PROJECT }}
+          AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
+          APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+        run: |
+          python -m src.continuous_evaluation.run_evaluation
+          echo "✅ Full evaluation complete"
+
+      - name: Regression Check
+        env:
+          APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+        run: |
+          python -m src.continuous_evaluation.regression_check
+
+      - name: Post evaluation summary
+        if: always()
+        run: |
+          echo "## 📊 Continuous Evaluation — Full Run" >> $GITHUB_STEP_SUMMARY
+          if [ -f evaluation_results.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat evaluation_results.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f regression_comparison.md ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Regression Check" >> $GITHUB_STEP_SUMMARY
+            cat regression_comparison.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload evaluation artifacts
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: evaluation-results
+          path: |
+            evaluation_results.json
+            regression_comparison.md
+          retention-days: 90
