@@ -95,6 +95,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'AZURE_RESOURCE_GROUP', value: resourceGroupName }
         { name: 'LOG_LEVEL', value: 'INFO' }
         { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'true' }
+        { name: 'WEBSITES_CONTAINER_START_TIME_LIMIT', value: '600' }
         { name: 'WEBSITE_PORT', value: '8000' }
       ]
     }

@@ -78,7 +78,7 @@ jobs:
       - name: Deploy application code
         run: |
           # Package app code (exclude non-essential files)
-          zip -r app.zip src/ requirements.txt startup.sh pyproject.toml \
+          zip -r app.zip src/ requirements-app.txt startup.sh pyproject.toml \
             -x "src/**/__pycache__/*" "src/**/*.pyc" "*.egg-info/*"
           
           # Deploy to App Service

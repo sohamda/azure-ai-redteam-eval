@@ -50,7 +50,25 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
         run: |
+          # Start the agent app in the background
+          python -m uvicorn src.app:app --host 0.0.0.0 --port 8000 &
+          APP_PID=$!
+
+          # Wait for the app to be ready
+          echo "Waiting for app to start..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "App is ready!"
+              break
+            fi
+            sleep 2
+          done
+
+          # Run red team probes
           python -m src.redteam.run_redteam
+
+          # Cleanup
+          kill $APP_PID 2>/dev/null || true
 
       - name: Post red team summary
         if: always()

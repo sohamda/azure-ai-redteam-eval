@@ -1,0 +1,24 @@
+# Runtime-only dependencies for App Service deployment
+# (excludes evaluation, redteam, and dev/test packages)
+
+# Multi-Agent Framework
+agent-framework-azure-ai>=1.0.0rc2
+agent-framework-core>=1.0.0rc2
+
+# Azure SDKs
+azure-identity>=1.19.0
+
+# API
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+httpx>=0.27.0
+
+# Observability
+opentelemetry-api>=1.28.0
+opentelemetry-sdk>=1.28.0
+azure-monitor-opentelemetry>=1.6.0
+
+# Config
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-dotenv>=1.0.0
