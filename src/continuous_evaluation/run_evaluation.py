@@ -20,6 +20,8 @@ from src.continuous_evaluation.evaluators import get_all_evaluators
 from src.continuous_evaluation.metrics import format_results_table, summarize_scores
 from src.continuous_evaluation.retry import retry_with_backoff
 from src.continuous_evaluation.thresholds import any_failures, check_all_thresholds
+from src.continuous_monitoring.eval_metrics_exporter import export_eval_scores
+from src.continuous_monitoring.telemetry import setup_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,9 @@ async def run_full_evaluation() -> dict[str, float]:
     """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
+    # Initialize telemetry so eval scores flow to App Insights
+    setup_telemetry()
+
     logger.info("=" * 60)
     logger.info("CONTINUOUS EVALUATION — Full Run")
     logger.info("=" * 60)
@@ -88,6 +93,10 @@ async def run_full_evaluation() -> dict[str, float]:
     # Summarize scores
     scores = summarize_scores(results)
     logger.info("\n%s", format_results_table(scores))
+
+    # Export scores as custom metrics to App Insights (CE → CM bridge)
+    export_eval_scores(scores, evaluation_name="ce-full-evaluation")
+    logger.info("Eval scores exported to App Insights")
 
     # Save results
     with RESULTS_OUTPUT.open("w") as f:

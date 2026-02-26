@@ -18,6 +18,8 @@ from src.continuous_evaluation.evaluators import get_builtin_evaluators, get_cus
 from src.continuous_evaluation.metrics import format_results_table, summarize_scores
 from src.continuous_evaluation.retry import retry_with_backoff
 from src.continuous_evaluation.thresholds import any_failures, check_all_thresholds
+from src.continuous_monitoring.eval_metrics_exporter import export_eval_scores
+from src.continuous_monitoring.telemetry import setup_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ async def run_pr_evaluation() -> dict[str, float]:
         SystemExit: If any evaluator score falls below its threshold.
     """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    setup_telemetry()
 
     logger.info("=" * 60)
     logger.info("CONTINUOUS EVALUATION — PR Lightweight Run")
@@ -79,6 +82,7 @@ async def run_pr_evaluation() -> dict[str, float]:
     )
 
     scores = summarize_scores(results)
+    export_eval_scores(scores, evaluation_name="ce-pr-evaluation")
 
     # Output for $GITHUB_STEP_SUMMARY
     table = format_results_table(scores)

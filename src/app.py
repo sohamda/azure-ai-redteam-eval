@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from src.agents.orchestrator import run_orchestrator
 from src.config import get_settings
-from src.continuous_monitoring.telemetry import get_tracer, setup_telemetry
+from src.continuous_monitoring.telemetry import create_agent_metrics, get_tracer, setup_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize OpenTelemetry → App Insights
     setup_telemetry()
+
+    # Create agent-level metrics (counters, histograms)
+    app.state.agent_metrics = create_agent_metrics()
+
     logger.info("Starting azure-ai-redteam-eval agent service")
     logger.info("OpenAI endpoint: %s", settings.openai.endpoint)
     logger.info("AI Foundry project: %s", settings.ai_foundry.project)
@@ -109,6 +113,9 @@ async def chat(request: ChatRequest) -> ChatResponse:
         span.set_attribute("query.preview", request.query[:80])
         logger.info("Received chat request: %s", request.query[:80])
 
+        # Get metrics instruments
+        agent_metrics = getattr(app.state, "agent_metrics", None)
+
         try:
             result = await run_orchestrator(query=request.query, context=request.context)
             duration_ms = (time.perf_counter() - start_time) * 1000
@@ -117,6 +124,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
             span.set_attribute("agents.involved", ",".join(result.agents_involved))
             span.set_attribute("duration_ms", duration_ms)
             span.set_attribute("status", "success")
+
+            # Record metrics for CM dashboard
+            if agent_metrics:
+                for agent_name in result.agents_involved:
+                    agent_metrics["request_count"].add(1, {"agent.name": agent_name})
+                    agent_metrics["request_duration"].record(duration_ms, {"agent.name": agent_name})
 
             logger.info(
                 "Response generated in %.0fms by agents: %s",
@@ -130,6 +143,11 @@ async def chat(request: ChatRequest) -> ChatResponse:
             span.set_attribute("error.type", type(e).__name__)
             span.set_attribute("error.message", str(e)[:200])
             span.set_attribute("duration_ms", duration_ms)
+
+            # Record error metric
+            if agent_metrics:
+                agent_metrics["error_count"].add(1, {"agent.name": "orchestrator", "error.type": type(e).__name__})
+
             logger.exception("Chat request failed after %.0fms", duration_ms)
             raise
 
