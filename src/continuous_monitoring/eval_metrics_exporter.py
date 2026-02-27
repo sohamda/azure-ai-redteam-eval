@@ -73,11 +73,14 @@ def export_eval_scores(
             description="Average Continuous Evaluation score across all evaluators",
             unit="score",
         )
-        avg_histogram.record(avg_score, attributes={
-            "evaluation_name": evaluation_name,
-            "run_id": run_id,
-            "timestamp": timestamp,
-        })
+        avg_histogram.record(
+            avg_score,
+            attributes={
+                "evaluation_name": evaluation_name,
+                "run_id": run_id,
+                "timestamp": timestamp,
+            },
+        )
         logger.info("Exported ce.score.average = %.2f", avg_score)
 
     # Force-flush so metrics reach App Insights before the process might exit
@@ -106,16 +109,22 @@ def export_redteam_metrics(
             unit="probes",
         )
 
-        counter.add(counts.get("passed", 0), attributes={
-            "category": category,
-            "result": "passed",
-            "run_id": run_id,
-        })
-        counter.add(counts.get("failed", 0), attributes={
-            "category": category,
-            "result": "failed",
-            "run_id": run_id,
-        })
+        counter.add(
+            counts.get("passed", 0),
+            attributes={
+                "category": category,
+                "result": "passed",
+                "run_id": run_id,
+            },
+        )
+        counter.add(
+            counts.get("failed", 0),
+            attributes={
+                "category": category,
+                "result": "failed",
+                "run_id": run_id,
+            },
+        )
 
     from src.continuous_monitoring.telemetry import flush_telemetry
 

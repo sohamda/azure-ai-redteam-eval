@@ -13,7 +13,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class AzureOpenAISettings(BaseSettings):
     """Azure OpenAI connection settings."""
 
-    model_config = SettingsConfigDict(env_prefix="AZURE_OPENAI_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="AZURE_OPENAI_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     endpoint: str = Field(default="", description="Azure OpenAI endpoint URL")
     deployment: str = Field(default="gpt-4o", description="Model deployment name")
@@ -23,7 +28,12 @@ class AzureOpenAISettings(BaseSettings):
 class AzureAIFoundrySettings(BaseSettings):
     """Azure AI Foundry project settings for evaluations and Agent Framework."""
 
-    model_config = SettingsConfigDict(env_prefix="AZURE_AI_FOUNDRY_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="AZURE_AI_FOUNDRY_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     project: str = Field(default="", description="AI Foundry project name")
     endpoint: str = Field(default="", description="AI Foundry project endpoint URL (used by AzureAIClient)")
@@ -59,7 +69,12 @@ class CEThresholdSettings(BaseSettings):
     Scores below these thresholds cause pipeline failures.
     """
 
-    model_config = SettingsConfigDict(env_prefix="CE_THRESHOLD_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="CE_THRESHOLD_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     groundedness: float = Field(default=4.0, description="Minimum groundedness score (1-5)")
     coherence: float = Field(default=4.0, description="Minimum coherence score (1-5)")

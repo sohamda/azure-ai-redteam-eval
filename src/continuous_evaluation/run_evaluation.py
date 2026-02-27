@@ -110,7 +110,7 @@ async def run_full_evaluation() -> dict[str, float]:
         logger.info("  %s: %.2f (threshold: %.2f) → %s", tr.evaluator, tr.score, tr.threshold, tr.status.value)
 
     if any_failures(threshold_results):
-        logger.error("EVALUATION FAILED — scores below thresholds. Deployment blocked.")
+        logger.error("EVALUATION FAILED — scores below thresholds. Deployment is unsafe.")
         flush_telemetry(timeout_millis=15_000)
         sys.exit(1)
 

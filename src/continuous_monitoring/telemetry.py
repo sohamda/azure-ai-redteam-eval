@@ -61,7 +61,9 @@ def setup_telemetry() -> None:
             # appear in the App Insights 'dependencies' table even when the SDK
             # client was created before configure_azure_monitor ran.
             try:
-                from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+                from opentelemetry.instrumentation.httpx import (  # type: ignore[import-not-found]
+                    HTTPXClientInstrumentor,
+                )
 
                 HTTPXClientInstrumentor().instrument()
                 logger.info("httpx instrumented for dependency tracking")

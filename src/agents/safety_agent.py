@@ -39,7 +39,7 @@ class SafetyAgent(Executor):
 
         verdict: str = (response.text or "").strip().upper()
         if "UNSAFE" in verdict:
-            final_response = f"[REDACTED] The response was flagged as unsafe and has been withheld."
+            final_response = "[REDACTED] The response was flagged as unsafe and has been withheld."
         else:
             # Pass through the actual retrieval response with a safety prefix
             final_response = f"[SAFE] {message.grounded_response}"

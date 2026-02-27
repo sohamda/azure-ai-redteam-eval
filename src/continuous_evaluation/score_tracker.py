@@ -75,10 +75,13 @@ def track_scores(scores: dict[str, float], run_id: str = "") -> None:
             description="Average CE score across all evaluators",
             unit="score",
         )
-        avg_histogram.record(avg_score, attributes={
-            "run_id": run_id,
-            "project": settings.ai_foundry.project,
-        })
+        avg_histogram.record(
+            avg_score,
+            attributes={
+                "run_id": run_id,
+                "project": settings.ai_foundry.project,
+            },
+        )
         logger.info("Tracked ce.score.average = %.2f", avg_score)
 
     logger.info("All %d scores tracked as custom metrics (ce.score.* prefix)", len(scores))

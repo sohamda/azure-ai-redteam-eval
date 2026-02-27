@@ -69,13 +69,15 @@ def compare_scores(
         else:
             status = "STABLE"
 
-        comparisons.append({
-            "evaluator": evaluator,
-            "baseline": base_score,
-            "current": curr_score,
-            "delta": round(delta, 3),
-            "status": status,
-        })
+        comparisons.append(
+            {
+                "evaluator": evaluator,
+                "baseline": base_score,
+                "current": curr_score,
+                "delta": round(delta, 3),
+                "status": status,
+            }
+        )
 
     return comparisons, has_regression
 
@@ -98,15 +100,13 @@ def format_comparison_markdown(comparisons: list[dict[str, float | str]], has_re
 
     for c in comparisons:
         delta_str = f"+{c['delta']}" if float(str(c["delta"])) > 0 else str(c["delta"])
-        emoji = {"REGRESSION": "🔴", "SLIGHT DROP": "🟡", "IMPROVED": "🟢", "STABLE": "⚪"}.get(
-            str(c["status"]), "⚪"
-        )
+        emoji = {"REGRESSION": "🔴", "SLIGHT DROP": "🟡", "IMPROVED": "🟢", "STABLE": "⚪"}.get(str(c["status"]), "⚪")
         lines.append(
             f"| {c['evaluator']} | {c['baseline']:.2f} | {c['current']:.2f} | {delta_str} | {emoji} {c['status']} |"
         )
 
     if has_regression:
-        lines.append("\n**REGRESSION DETECTED** — deployment blocked.")
+        lines.append("\n**REGRESSION DETECTED** — deployment is unsafe.")
     else:
         lines.append("\n**No regressions detected** — safe to proceed.")
 
@@ -149,11 +149,11 @@ async def run_regression_check() -> bool:
     print(report)
 
     # Save comparison report
-    COMPARISON_OUTPUT.write_text(report)
+    COMPARISON_OUTPUT.write_text(report, encoding="utf-8")
     logger.info("Comparison saved to %s", COMPARISON_OUTPUT)
 
     if has_regression:
-        logger.error("REGRESSION DETECTED — deployment blocked.")
+        logger.error("REGRESSION DETECTED — deployment is unsafe.")
         sys.exit(1)
 
     logger.info("No regressions — safe to proceed.")

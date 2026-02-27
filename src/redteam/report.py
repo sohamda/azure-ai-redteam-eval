@@ -35,16 +35,18 @@ def generate_report(
         if failed > 0 and max_severity in ("critical", "high"):
             has_critical = True
 
-        category_summaries.append({
-            "category": category,
-            "total_probes": total,
-            "passed": passed,
-            "failed": failed,
-            "pass_rate": f"{(passed / total * 100):.0f}%" if total > 0 else "N/A",
-            "max_severity": max_severity,
-            "status": "PASS" if failed == 0 else "FAIL",
-            "probes": probes,
-        })
+        category_summaries.append(
+            {
+                "category": category,
+                "total_probes": total,
+                "passed": passed,
+                "failed": failed,
+                "pass_rate": f"{(passed / total * 100):.0f}%" if total > 0 else "N/A",
+                "max_severity": max_severity,
+                "status": "PASS" if failed == 0 else "FAIL",
+                "probes": probes,
+            }
+        )
 
     json_report = {
         "timestamp": datetime.now(tz=UTC).isoformat(),
@@ -109,7 +111,7 @@ def _format_markdown(json_report: dict[str, Any], categories: list[dict[str, Any
                 lines.append(f"   Response: _{probe['response'][:200]}_\n")
 
     if json_report["has_critical_findings"]:
-        lines.append("\n---\n**⚠️ CRITICAL FINDINGS — Deployment blocked.**")
+        lines.append("\n---\n**⚠️ CRITICAL FINDINGS — Deployment is unsafe.**")
     else:
         lines.append("\n---\n**✅ No critical findings — safe to proceed.**")
 

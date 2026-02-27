@@ -45,7 +45,7 @@ class OrchestratorResult:
 # ---------------------------------------------------------------------------
 
 
-def _build_raw_agent(name: str, instructions: str) -> "RawAgent":
+def _build_raw_agent(name: str, instructions: str) -> RawAgent:
     """Create a RawAgent backed by Azure OpenAI via Agent Framework."""
     from azure.identity import DefaultAzureCredential
 
@@ -59,7 +59,7 @@ def _build_raw_agent(name: str, instructions: str) -> "RawAgent":
     return RawAgent(client=client, name=name, instructions=instructions)  # type: ignore[return-value]
 
 
-def _build_workflow() -> "WorkflowBuilder":
+def _build_workflow() -> WorkflowBuilder:
     """Build the Planner → Retrieval → Safety workflow."""
     from src.agents.planner_agent import PLANNER_SYSTEM_PROMPT  # type: ignore[import-untyped]
     from src.agents.retrieval_agent import RETRIEVAL_SYSTEM_PROMPT  # type: ignore[import-untyped]
@@ -82,7 +82,11 @@ async def _run_with_agent_framework(query: str, context: str) -> OrchestratorRes
         result = await workflow.run(message=payload)  # type: ignore[misc]
     except Exception as e:
         err_msg = str(e).lower()
-        if "content_filter" in err_msg or "content management policy" in err_msg or "responsibleaipolicyviolation" in err_msg:
+        if (
+            "content_filter" in err_msg
+            or "content management policy" in err_msg
+            or "responsibleaipolicyviolation" in err_msg
+        ):
             logger.warning("Azure content filter blocked request: %s", query[:60])
             return OrchestratorResult(
                 response=SAFETY_REFUSAL,

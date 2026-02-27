@@ -105,7 +105,11 @@ async def run_redteam_sdk(endpoint: str = "http://localhost:8000/chat") -> dict[
 
     target = _build_target_callback(endpoint)
 
-    logger.info("Running red-team scan with strategies: %s", [s.name if hasattr(s, 'name') else str(s) for s in ATTACK_STRATEGIES])
+    strategy_names = [
+        s.name if hasattr(s, "name") else str(s)  # type: ignore[union-attr]
+        for s in ATTACK_STRATEGIES
+    ]
+    logger.info("Running red-team scan with strategies: %s", strategy_names)
 
     result = await red_team.scan(
         target=target,
@@ -207,7 +211,7 @@ async def run_redteam() -> None:
         logger.info("RedTeam SDK scan completed.")
         # Save SDK result
         sdk_output = Path("redteam_sdk_result.json")
-        sdk_output.write_text(json.dumps(str(sdk_result), indent=2))
+        sdk_output.write_text(json.dumps(str(sdk_result), indent=2), encoding="utf-8")
         logger.info("SDK scan result saved to %s", sdk_output)
     except Exception as e:
         logger.warning("RedTeam SDK scan failed (non-blocking): %s", e)
@@ -228,7 +232,7 @@ async def run_redteam() -> None:
     print(report_md)
 
     if has_critical:
-        logger.error("CRITICAL FINDINGS DETECTED — deployment blocked.")
+        logger.error("CRITICAL FINDINGS DETECTED — deployment is unsafe.")
         sys.exit(1)
 
     logger.info("Red teaming completed — no critical findings.")
