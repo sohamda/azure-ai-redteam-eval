@@ -58,6 +58,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize OpenTelemetry → App Insights
     setup_telemetry()
 
+    # Explicitly instrument the *already-created* FastAPI app so that
+    # inbound HTTP requests appear in the App Insights 'requests' table.
+    # configure_azure_monitor() patches FastAPI.__init__ for NEW apps,
+    # but our 'app' object was created at module level before setup ran.
+    try:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor.instrument_app(app)
+        logger.info("FastAPI app explicitly instrumented for request telemetry")
+    except Exception as exc:
+        logger.warning("Could not instrument FastAPI app: %s", exc)
+
     # Create agent-level metrics (counters, histograms)
     app.state.agent_metrics = create_agent_metrics()
 

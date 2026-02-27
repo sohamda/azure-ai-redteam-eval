@@ -72,7 +72,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(\n    tostring(customDimensions.evaluator),\n    extract(@'ce\\.score\\.(.+)', 1, name)\n  )\n| where isnotempty(evaluator)\n| summarize latest_score=arg_max(timestamp, value) by evaluator\n| project evaluator, score=round(value, 2), last_updated=format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss')\n| order by evaluator asc",
+        "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(\n    tostring(customDimensions.evaluator),\n    extract(@'ce\\.score\\.(.+)', 1, name)\n  )\n| where isnotempty(evaluator)\n| summarize arg_max(timestamp, value) by evaluator\n| project evaluator, score=round(value, 2), last_updated=format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss')\n| order by evaluator asc",
         "size": 0,
         "title": "Latest Evaluation Scores",
         "timeContext": { "durationMs": 604800000 },
@@ -227,7 +227,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(\n    tostring(customDimensions.evaluator),\n    extract(@'ce\\.score\\.(.+)', 1, name)\n  )\n| where isnotempty(evaluator)\n| summarize latest=arg_max(timestamp, value), previous=arg_min(timestamp, value) by evaluator\n| extend delta = round(latest_value - previous_value, 2)\n| project evaluator, latest_score=round(latest_value, 2), previous_score=round(previous_value, 2), delta\n| order by delta asc",
+        "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(tostring(customDimensions.evaluator), extract('ce[.]score[.](.+)', 1, name))\n| where isnotempty(evaluator)\n| extend latest_value = value, previous_value = value\n| summarize arg_max(timestamp, latest_value), arg_min(timestamp, previous_value) by evaluator\n| extend delta = round(latest_value - previous_value, 2)\n| project evaluator, latest_score=round(latest_value, 2), previous_score=round(previous_value, 2), delta\n| order by delta asc",
         "size": 0,
         "title": "Score Regressions (Latest vs Previous)",
         "timeContext": { "durationMs": 604800000 },
