@@ -41,6 +41,26 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Resolve target URL
+        id: target
+        run: |
+          echo "url=${{ secrets.APP_SERVICE_ENDPOINT }}" >> "$GITHUB_OUTPUT"
+          echo "Target: ${{ secrets.APP_SERVICE_ENDPOINT }}"
+
+      - name: Wait for target to be ready
+        run: |
+          TARGET="${{ steps.target.outputs.url }}"
+          HEALTH_URL="${TARGET%/chat}/health"
+          echo "Waiting for ${HEALTH_URL} ..."
+          for i in $(seq 1 30); do
+            if curl -sf "${HEALTH_URL}" > /dev/null 2>&1; then
+              echo "Target is ready!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::warning::Target health check timed out — proceeding anyway"
+
       - name: Run Red Team Probes
         env:
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
@@ -49,26 +69,9 @@ jobs:
           AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          REDTEAM_TARGET_URL: ${{ steps.target.outputs.url }}
         run: |
-          # Start the agent app in the background
-          python -m uvicorn src.app:app --host 0.0.0.0 --port 8000 &
-          APP_PID=$!
-
-          # Wait for the app to be ready
-          echo "Waiting for app to start..."
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
-              echo "App is ready!"
-              break
-            fi
-            sleep 2
-          done
-
-          # Run red team probes
-          python -m src.redteam.run_redteam
-
-          # Cleanup
-          kill $APP_PID 2>/dev/null || true
+          python -m src.redteam.run_redteam --target-url "$REDTEAM_TARGET_URL"
 
       - name: Post red team summary
         if: always()

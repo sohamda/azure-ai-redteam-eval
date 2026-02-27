@@ -1,5 +1,6 @@
-# Runtime-only dependencies for App Service deployment
-# (excludes evaluation, redteam, and dev/test packages)
+# Runtime dependencies for App Service deployment
+# Includes agent framework, observability, and evaluation SDKs
+# needed by the running app (telemetry, score tracking, safety agent)
 
 # Multi-Agent Framework
 agent-framework-azure-ai>=1.0.0rc2
@@ -7,6 +8,7 @@ agent-framework-core>=1.0.0rc2
 
 # Azure SDKs
 azure-identity>=1.19.0
+azure-ai-evaluation>=1.0.0
 
 # API
 fastapi>=0.115.0

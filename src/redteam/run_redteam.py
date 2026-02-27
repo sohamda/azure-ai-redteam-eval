@@ -155,10 +155,37 @@ async def run_redteam_custom(endpoint: str = "http://localhost:8000/chat") -> di
     return results
 
 
+def _resolve_target_url() -> str:
+    """Resolve the target URL from CLI args or environment.
+
+    Priority: --target-url CLI flag > REDTEAM_TARGET_URL env var > default localhost.
+
+    Returns:
+        The resolved chat endpoint URL.
+    """
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(description="Run AI Red Team probes", add_help=False)
+    parser.add_argument("--target-url", type=str, default=None, help="Target chat endpoint URL")
+    args, _ = parser.parse_known_args()
+
+    if args.target_url:
+        return args.target_url
+
+    env_url = os.environ.get("REDTEAM_TARGET_URL")
+    if env_url:
+        return env_url
+
+    return "http://localhost:8000/chat"
+
+
 async def run_redteam() -> None:
     """Run the full red-team evaluation — SDK scan + custom probes.
 
     Generates a combined report with pass/fail per category.
+    Target URL is resolved from --target-url CLI flag, REDTEAM_TARGET_URL
+    env var, or defaults to http://localhost:8000/chat.
 
     Raises:
         SystemExit: If critical findings are detected.
@@ -169,7 +196,8 @@ async def run_redteam() -> None:
     logger.info("AI RED TEAMING — Adversarial Evaluation")
     logger.info("=" * 60)
 
-    endpoint = "http://localhost:8000/chat"
+    endpoint = _resolve_target_url()
+    logger.info("Target endpoint: %s", endpoint)
     has_critical = False
 
     # --- Phase 1: Azure AI Evaluation RedTeam SDK scan ---

@@ -49,8 +49,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
     SecurityControl: 'Ignore'
   }
   sku: {
-    name: 'B2'
-    tier: 'Basic'
+    name: 'P1v3'
+    tier: 'PremiumV3'
   }
   kind: 'linux'
   properties: {
