@@ -43,6 +43,8 @@ jobs:
 
       - name: Run Full Evaluation (golden dataset)
         env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
           AZURE_AI_FOUNDRY_PROJECT: ${{ secrets.AZURE_AI_FOUNDRY_PROJECT }}
