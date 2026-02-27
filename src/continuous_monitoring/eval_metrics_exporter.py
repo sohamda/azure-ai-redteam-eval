@@ -2,6 +2,9 @@
 
 Bridges Continuous Evaluation into Continuous Monitoring by making
 evaluation scores visible as time-series custom metrics.
+
+Metric names use the ``ce.score.{evaluator}`` prefix that the
+CE/CM Dashboard Workbook queries rely on.
 """
 
 from __future__ import annotations
@@ -13,10 +16,17 @@ from opentelemetry import metrics
 
 logger = logging.getLogger(__name__)
 
+# Lazy-initialised meter — created after setup_telemetry() configures the
+# global MeterProvider with the Azure Monitor exporter.
+_meter: metrics.Meter | None = None
 
-def get_eval_meter() -> metrics.Meter:
-    """Get or create the evaluation metrics meter."""
-    return metrics.get_meter("ce-eval-metrics")
+
+def _get_eval_meter() -> metrics.Meter:
+    """Get or create the evaluation metrics meter (lazy)."""
+    global _meter  # noqa: PLW0603
+    if _meter is None:
+        _meter = metrics.get_meter("ce-eval-metrics")
+    return _meter
 
 
 def export_eval_scores(
@@ -34,7 +44,7 @@ def export_eval_scores(
         evaluation_name: Name of the evaluation run.
         run_id: Unique identifier for the evaluation run.
     """
-    meter = get_eval_meter()
+    meter = _get_eval_meter()
     timestamp = datetime.now(tz=UTC).isoformat()
 
     for evaluator, score in scores.items():
@@ -70,7 +80,11 @@ def export_eval_scores(
         })
         logger.info("Exported ce.score.average = %.2f", avg_score)
 
-    logger.info("Exported %d evaluation metrics to App Insights", len(scores) + 1)
+    # Force-flush so metrics reach App Insights before the process might exit
+    from src.continuous_monitoring.telemetry import flush_telemetry
+
+    flush_telemetry(timeout_millis=15_000)
+    logger.info("Exported %d evaluation metrics to App Insights (flushed)", len(scores) + 1)
 
 
 def export_redteam_metrics(
@@ -83,7 +97,7 @@ def export_redteam_metrics(
         category_results: Dict mapping category to {total, passed, failed} counts.
         run_id: Unique identifier for the red-team run.
     """
-    meter = get_eval_meter()
+    meter = _get_eval_meter()
 
     for category, counts in category_results.items():
         counter = meter.create_counter(
@@ -103,4 +117,7 @@ def export_redteam_metrics(
             "run_id": run_id,
         })
 
-    logger.info("Exported red-team metrics for %d categories", len(category_results))
+    from src.continuous_monitoring.telemetry import flush_telemetry
+
+    flush_telemetry(timeout_millis=15_000)
+    logger.info("Exported red-team metrics for %d categories (flushed)", len(category_results))

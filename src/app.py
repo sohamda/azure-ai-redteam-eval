@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from src.agents.orchestrator import run_orchestrator
 from src.config import get_settings
-from src.continuous_monitoring.telemetry import create_agent_metrics, get_tracer, setup_telemetry
+from src.continuous_monitoring.telemetry import create_agent_metrics, flush_telemetry, get_tracer, setup_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +66,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("AI Foundry project: %s", settings.ai_foundry.project)
     logger.info("Telemetry: App Insights connected=%s", bool(settings.monitoring.applicationinsights_connection_string))
     yield
+    # Flush pending telemetry before shutdown so nothing is lost
+    flush_telemetry(timeout_millis=10_000)
     logger.info("Shutting down agent service")
 
 

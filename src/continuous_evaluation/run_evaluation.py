@@ -21,7 +21,7 @@ from src.continuous_evaluation.metrics import format_results_table, summarize_sc
 from src.continuous_evaluation.retry import retry_with_backoff
 from src.continuous_evaluation.thresholds import any_failures, check_all_thresholds
 from src.continuous_monitoring.eval_metrics_exporter import export_eval_scores
-from src.continuous_monitoring.telemetry import setup_telemetry
+from src.continuous_monitoring.telemetry import flush_telemetry, setup_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -111,9 +111,11 @@ async def run_full_evaluation() -> dict[str, float]:
 
     if any_failures(threshold_results):
         logger.error("EVALUATION FAILED — scores below thresholds. Deployment blocked.")
+        flush_telemetry(timeout_millis=15_000)
         sys.exit(1)
 
     logger.info("EVALUATION PASSED — all scores meet thresholds.")
+    flush_telemetry(timeout_millis=15_000)
     return scores
 
 
