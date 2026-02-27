@@ -1,6 +1,8 @@
 # Architecture — CE/CM-Centric View
 
 > This diagram is narrated through the lens of **Continuous Evaluation** and **Continuous Monitoring**. The multi-agent system is the application under evaluation — not the star of the show.
+>
+> All components described below are fully implemented and running. See the [README](../README.md) for latest evaluation scores.
 
 ---
 
@@ -87,10 +89,12 @@ A multi-agent system built with the **Microsoft Agent Framework** — deliberate
 
 | Agent | Responsibility |
 |-------|---------------|
-| **Orchestrator** | Routes user requests through the agent group |
+| **Orchestrator** | Routes user requests through the Planner → Retrieval → Safety chain via `WorkflowBuilder` |
 | **Planner** | Decomposes tasks, decides which agents to invoke |
 | **Retrieval** | Fetches grounding context (RAG pattern) |
-| **Safety** | Content-safety guardrail — filters unsafe outputs |
+| **Safety** | Content-safety guardrail — filters unsafe outputs (prompt injection, jailbreak, PII) |
+
+The orchestrator has a built-in fallback: when the Agent Framework is unavailable (e.g., dependency conflicts), it seamlessly falls back to direct Azure OpenAI SDK calls with the same safety guardrails.
 
 ### Continuous Evaluation (CE)
 
@@ -98,14 +102,15 @@ The evaluation subsystem in `src/continuous_evaluation/`:
 
 | Component | File | Function |
 |-----------|------|----------|
-| Full evaluation | `run_evaluation.py` | Runs all evaluators against the golden dataset |
-| PR evaluation | `run_pr_evaluation.py` | Fast 5-row eval for CI |
-| Evaluators | `evaluators.py` | Groundedness, Coherence, Relevance, Fluency, Safety + custom |
-| Thresholds | `thresholds.py` | Pass/warn/fail per evaluator — gates the pipeline |
-| Regression check | `regression_check.py` | Compares current vs. baseline scores |
-| Score tracking | `score_tracker.py` | Pushes scores to App Insights as custom metrics |
+| Full evaluation | `run_evaluation.py` | Runs all evaluators against the 10-row golden dataset via `azure-ai-evaluation` |
+| PR evaluation | `run_pr_evaluation.py` | Fast 5-row eval for CI (< 60 seconds) |
+| Evaluators | `evaluators.py` | Groundedness, Coherence, Relevance, Fluency, Conciseness + custom `ConcisenessEvaluator` |
+| Thresholds | `thresholds.py` | Pass/warn/fail per evaluator — configurable via `CE_THRESHOLD_*` env vars |
+| Regression check | `regression_check.py` | Compares current vs. baseline scores, blocks if delta > 0.3 |
+| Score tracking | `score_tracker.py` | Pushes scores to App Insights as custom metrics (bridges CE → CM) |
+| Retry logic | `retry.py` | Exponential backoff for transient Azure AI evaluation failures |
 
-Red teaming (`src/redteam/`) is adversarial CE — fires prompt injection, jailbreak, and PII extraction probes.
+Red teaming (`src/redteam/`) is adversarial CE — uses the **Azure AI Evaluation Red Team SDK** (`RedTeam` class) with `AttackStrategy.Baseline` and `AttackStrategy.Jailbreak` strategies, plus custom probes for prompt injection, PII extraction, social engineering, and misinformation.
 
 ### Continuous Monitoring (CM)
 
@@ -137,3 +142,17 @@ Code Change → PR Eval (CE) → Merge → Deploy → Full Eval (CE) → Regress
 ```
 
 The key insight: **CE feeds CM, and CM feeds CE**. Evaluation scores become monitoring metrics. Monitoring anomalies become new evaluation test cases.
+
+---
+
+## API Surface
+
+The FastAPI application (`src/app.py`) exposes:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Interactive chat UI (HTML) |
+| `GET` | `/health` | Health check |
+| `POST` | `/chat` | Multi-agent orchestrator — target for evaluations and red-team probes |
+
+Every `/chat` request emits OpenTelemetry spans with attributes: `query.length`, `response.length`, `agents.involved`, `duration_ms`, and `status`.

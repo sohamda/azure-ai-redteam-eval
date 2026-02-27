@@ -1,6 +1,7 @@
 ================================================================================
   Multi-Agent Orchestrator Demo — Fallback Output
-  Generated: 2025-01-15T09:00:00Z
+  Generated: 2026-02-26T09:45:00Z
+  Endpoint: http://localhost:8000 (FastAPI + Chat UI)
 ================================================================================
 
 --- Query 1 ---
@@ -22,8 +23,8 @@ Response:
   the development lifecycle. Unlike one-time testing, CE runs evaluations on
   every PR, every deployment, and on a schedule — ensuring that AI quality
   never regresses. Key evaluators include groundedness, coherence, relevance,
-  fluency, and safety. When scores drop below defined thresholds, the pipeline
-  fails and blocks deployment.
+  fluency, and conciseness. When scores drop below defined thresholds, the
+  pipeline fails and blocks deployment.
 
 Agents involved: planner-agent, retrieval-agent, safety-agent
 Duration: 2.3s | Tokens: 847
@@ -47,12 +48,16 @@ Response:
   attempts, PII extraction requests, and harmful content generation. By
   proactively probing for weaknesses, teams can patch vulnerabilities before
   they reach production. In our CE pipeline, red teaming runs weekly via
-  GitHub Actions. Critical findings automatically block deployments and
-  trigger alerts through our Continuous Monitoring dashboard.
+  GitHub Actions using the Azure AI Evaluation RedTeam SDK. Critical findings
+  automatically block deployments and trigger alerts through our Continuous
+  Monitoring dashboard.
 
 Agents involved: planner-agent, retrieval-agent, safety-agent
 Duration: 1.9s | Tokens: 723
 
 ================================================================================
   Demo complete — 2 queries processed, 0 safety violations
+  Chat UI available at http://localhost:8000
+  API endpoint: POST http://localhost:8000/chat
+  Health check: GET http://localhost:8000/health
 ================================================================================

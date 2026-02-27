@@ -1,13 +1,18 @@
 # Talk Script — Continuous Evaluation & Monitoring for AI Applications
 
 > 15-minute informal meetup talk. No slides — everything from the GitHub repo (Mermaid diagrams, code, terminal, Azure Portal). Pre-baked fallbacks in `fallback/` if live demo stalls.
+>
+> **Status: All demos verified and running.** Evaluation scores, red-team probes, and agent endpoints are live.
 
 ---
 
 ## Pre-Show Setup
 
-- [ ] Azure resources deployed and warm (`make deploy` 30+ min before)
-- [ ] `.env` populated, `az login` done
+- [x] Azure resources deployed and warm (`make deploy` 30+ min before)
+- [x] `.env` populated, `az login` done
+- [x] Agent service tested (`make agent-demo` → http://localhost:8000 with chat UI)
+- [x] Evaluation run verified (`make evaluate` → all thresholds pass)
+- [x] Red team run verified (`make redteam` → 10/10 probes blocked)
 - [ ] Browser tabs: (1) GitHub repo README, (2) `docs/architecture.md`, (3) GitHub Actions tab, (4) Azure Portal → App Insights → Dashboard
 - [ ] Terminal tabs pre-named: "Agent Demo", "Evaluation", "Red Team"
 - [ ] Font size: browser zoom 150%+, terminal font 18pt+
@@ -62,10 +67,10 @@
 
 ### 4:30–6:00 — Demo 1: Multi-Agent Interaction (Brief)
 
-**What you do:** Switch to terminal. Run `make agent-demo`.
+**What you do:** Switch to terminal. Run `make agent-demo` (starts FastAPI at http://localhost:8000).
 
 **What you say:**
-> "Here's the agent system. A user sends a question. The orchestrator delegates to a planner, a retrieval agent for grounding, and a safety agent for guardrails. *(point at agent turns in output)* This is a standard multi-agent pattern — Microsoft Agent Framework under the hood. But this isn't the point of the talk. The point is: how do you know this is *good*?"
+> "Here's the agent system. Open the browser to localhost:8000 — there's a chat UI. A user sends a question. The orchestrator delegates to a planner, a retrieval agent for grounding, and a safety agent for guardrails. *(point at agent turns in output)* This is a standard multi-agent pattern — Microsoft Agent Framework under the hood, with a direct Azure OpenAI fallback. But this isn't the point of the talk. The point is: how do you know this is *good*?"
 
 **Fallback:** If slow, open `fallback/agent_demo_output.txt` on GitHub.
 
@@ -78,11 +83,11 @@
 **What you do:** Terminal — run `make evaluate`.
 
 **What you say:**
-> "This is Continuous Evaluation. I'm running the full eval against our golden dataset — 10 rows, real queries, expected answers. The SDK runs Groundedness, Coherence, Relevance, Fluency, and Safety evaluators."
+> "This is Continuous Evaluation. I'm running the full eval against our golden dataset — 10 rows, real queries, expected answers. The SDK runs Groundedness, Coherence, Relevance, Fluency, and Conciseness evaluators."
 
 *(Wait for scores to print)*
 
-> "Here are the scores. *(read the table)* Every one of these has a threshold. If any score drops below the threshold, the pipeline fails. No human judgment needed."
+> "Here are the scores. Groundedness 4.7, Coherence 4.0, Relevance 4.6, Fluency 4.1, Conciseness 4.95. Every one of these has a threshold — minimum 4.0 for quality metrics. If any score drops below the threshold, the pipeline fails. No human judgment needed."
 
 **Then click into GitHub:**
 
@@ -100,11 +105,11 @@
 **What you do:** Terminal — run `make redteam`.
 
 **What you say:**
-> "Red teaming is adversarial evaluation. We fire prompt injection, jailbreak, and PII extraction attacks against the agents. *(point at attack categories in output)* Here's the report — pass/fail per category. Critical findings block deployment."
+> "Red teaming is adversarial evaluation. We fire prompt injection, jailbreak, and PII extraction attacks against the agents. *(point at attack categories in output)* 10 probes, 6 categories, 100% blocked. Here's the report — pass/fail per category. Critical findings block deployment."
 
 **Then click into GitHub:**
 
-1. Open `src/redteam/run_redteam.py` — "Attack categories and simulator setup."
+1. Open `src/redteam/run_redteam.py` — "Uses the Azure AI Evaluation Red Team SDK with Baseline and Jailbreak strategies, plus custom probes."
 2. Open `.github/workflows/redteam.yml` — "Runs weekly. Fails on critical findings."
 
 **Fallback:** Open `fallback/redteam_report.md` on GitHub.

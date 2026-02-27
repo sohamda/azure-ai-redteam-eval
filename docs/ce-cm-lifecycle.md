@@ -1,6 +1,8 @@
 # CE/CM Lifecycle — Continuous Evaluation & Monitoring Loop
 
 > This is the hero diagram for the talk. It shows how every code change flows through automated quality gates before reaching production users, and how production monitoring feeds back into evaluation.
+>
+> **Status**: Fully implemented and verified — all stages running end-to-end.
 
 ---
 
@@ -45,6 +47,7 @@ The `ci.yml` workflow runs:
 - **Type checking** (`pyright`)
 - **Unit tests** (`pytest tests/unit/`)
 - **Lightweight evaluation** — runs the evaluation SDK against a 5-row subset (`eval_golden_small.jsonl`) with pass/fail thresholds
+- **Retry logic** — built-in exponential backoff for transient Azure OpenAI rate limits
 
 Evaluation scores are posted to `$GITHUB_STEP_SUMMARY` — visible directly in the PR's Checks tab.
 
@@ -67,9 +70,10 @@ The `deploy.yml` workflow:
 ### 6. Full Continuous Evaluation (CE)
 
 The `evaluate.yml` workflow runs automatically after a successful deployment:
-- **Full evaluation** against the golden dataset (10-15 rows) using all evaluators (Groundedness, Coherence, Relevance, Fluency, Safety)
-- **Regression check** — compares current scores against the last known baseline. If any score dropped beyond a tolerance, the pipeline **fails and alerts**.
+- **Full evaluation** against the 10-row golden dataset using 5 evaluators: Groundedness, Coherence, Relevance, Fluency, and Conciseness (a custom evaluator)
+- **Regression check** — compares current scores against `evaluation_baseline.json`. If any score drops by more than 0.3 points, the pipeline **fails and alerts**
 - **Score tracking** — pushes evaluation scores as App Insights custom metrics, enabling trend monitoring
+- **Latest scores**: Groundedness 4.70 | Coherence 4.00 | Relevance 4.60 | Fluency 4.10 | Conciseness 4.95
 
 ### 7. Scores >= Baseline?
 

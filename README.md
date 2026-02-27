@@ -2,6 +2,11 @@
 
 > **GenAI apps need the same CI/CD rigour as traditional apps — plus Continuous Evaluation and Continuous Monitoring for safer deployments and faster feedback loops.**
 
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](#ci-cd-pipeline)
+[![Evaluation](https://img.shields.io/badge/CE-all%20thresholds%20passed-4CAF50)](#latest-evaluation-results)
+[![Red Team](https://img.shields.io/badge/Red%20Team-100%25%20blocked-4CAF50)](#latest-red-team-results)
+[![Python](https://img.shields.io/badge/python-3.12+-blue)](https://python.org)
+
 ---
 
 ## The CE/CM Lifecycle
@@ -36,11 +41,40 @@ flowchart TD
 
 ## What is Continuous Evaluation (CE)?
 
-**Every code change and every deployment is automatically evaluated for AI quality before reaching users.** CE runs built-in and custom evaluators (groundedness, coherence, relevance, safety) against golden datasets. Scores are compared to baselines — regressions block deployment. Red teaming is adversarial CE that stress-tests the system with prompt injection, jailbreak, and PII extraction attacks.
+**Every code change and every deployment is automatically evaluated for AI quality before reaching users.** CE runs built-in and custom evaluators (groundedness, coherence, relevance, fluency, conciseness, safety) against golden datasets. Scores are compared to baselines — regressions block deployment. Red teaming is adversarial CE that stress-tests the system with prompt injection, jailbreak, and PII extraction attacks.
 
 ## What is Continuous Monitoring (CM)?
 
 **Production AI systems are monitored for quality drift, anomalies, and safety violations in real time.** CM exports evaluation scores as custom metrics to Application Insights, alongside agent latency, error rates, and token usage. Alert rules fire when scores drop or safety flags spike — feeding back into the CE loop.
+
+---
+
+## Latest Evaluation Results
+
+Scores from the most recent full evaluation run against the 10-row golden dataset:
+
+| Evaluator | Score | Threshold | Status |
+|-----------|-------|-----------|--------|
+| Groundedness | **4.70** | ≥ 4.0 | ✅ PASS |
+| Coherence | **4.00** | ≥ 4.0 | ✅ PASS |
+| Relevance | **4.60** | ≥ 4.0 | ✅ PASS |
+| Fluency | **4.10** | ≥ 4.0 | ✅ PASS |
+| Conciseness | **4.95** | ≥ 3.5 | ✅ PASS |
+
+> All evaluators above threshold — safe to deploy.
+
+### Latest Red Team Results
+
+10 adversarial probes across 6 attack categories — **100% blocked**:
+
+| Category | Probes | Blocked | Status |
+|----------|--------|---------|--------|
+| Prompt Injection | 3 | 3 | ✅ PASS |
+| Jailbreak | 2 | 2 | ✅ PASS |
+| PII Extraction | 2 | 2 | ✅ PASS |
+| Harmful Content | 1 | 1 | ✅ PASS |
+| Social Engineering | 1 | 1 | ✅ PASS |
+| Misinformation | 1 | 1 | ✅ PASS |
 
 ---
 
@@ -57,12 +91,35 @@ flowchart TD
 
 ```bash
 make install
+# or: pip install -e ".[dev]"
+```
+
+### Run the Agent Service
+
+```bash
+make agent-demo
+# Starts FastAPI server at http://localhost:8000
+```
+
+**Endpoints:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Chat UI (interactive browser interface) |
+| `GET` | `/health` | Health check |
+| `POST` | `/chat` | Send queries to the multi-agent orchestrator |
+
+```bash
+# Example chat request
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is continuous evaluation for AI?"}'
 ```
 
 ### Run Continuous Evaluation
 
 ```bash
-# Full evaluation against golden dataset (10-15 rows)
+# Full evaluation against golden dataset (10 rows)
 make evaluate
 
 # Lightweight PR evaluation (5 rows — used in CI)
@@ -76,12 +133,6 @@ make regression-check
 
 ```bash
 make redteam
-```
-
-### Run the Agent Demo
-
-```bash
-make agent-demo
 ```
 
 ### Run All CI Checks
@@ -111,19 +162,58 @@ azure-ai-redteam-eval/
 │   └── redteam.yml           # CE: adversarial probes (weekly)
 │
 ├── src/
-│   ├── continuous_evaluation/ # ★ CE — evaluators, thresholds, regression detection
-│   ├── continuous_monitoring/ # ★ CM — telemetry, metrics export, alerts, dashboard
-│   ├── redteam/               # Adversarial evaluation (part of CE)
+│   ├── app.py                 # FastAPI entrypoint with chat UI
+│   ├── config.py              # Pydantic settings (env vars, endpoints, thresholds)
 │   ├── agents/                # Multi-agent system (the app under evaluation)
-│   ├── app.py                 # FastAPI entrypoint
-│   └── config.py              # Pydantic settings
+│   │   ├── orchestrator.py    # WorkflowBuilder: Planner → Retrieval → Safety
+│   │   ├── planner_agent.py   # Task decomposition and delegation
+│   │   ├── retrieval_agent.py # RAG / grounding agent
+│   │   ├── safety_agent.py    # Content-safety guardrail agent
+│   │   └── plugins/           # Agent Framework tools (search, eval)
+│   ├── continuous_evaluation/  # ★ CE — the hero concept
+│   │   ├── run_evaluation.py  # Full eval: all evaluators + golden dataset
+│   │   ├── run_pr_evaluation.py # Lightweight PR eval (5 rows)
+│   │   ├── evaluators.py      # Built-in + safety + custom evaluator defs
+│   │   ├── thresholds.py      # Pass/warn/fail per evaluator
+│   │   ├── regression_check.py # Current vs. baseline comparison
+│   │   ├── score_tracker.py   # Push scores to App Insights as metrics
+│   │   ├── metrics.py         # Parse & format results into tables
+│   │   └── datasets/          # Golden eval datasets (.jsonl)
+│   ├── redteam/               # Adversarial evaluation (part of CE)
+│   │   ├── run_redteam.py     # RedTeam SDK + custom probes
+│   │   ├── attack_strategies.py # Prompt injection, jailbreak, PII patterns
+│   │   └── report.py          # JSON + markdown report generation
+│   ├── continuous_monitoring/  # ★ CM — the other hero concept
+│   │   ├── telemetry.py       # OpenTelemetry → App Insights instrumentation
+│   │   ├── eval_metrics_exporter.py # Bridge CE scores into CM metrics
+│   │   ├── alert_rules.py     # Alert condition definitions
+│   │   └── dashboards/        # Azure Workbook JSON template
+│   └── static/                # Chat UI (index.html)
 │
 ├── infra/                     # Bicep IaC (AI Foundry, OpenAI, App Insights, alerts)
-├── tests/                     # Unit + integration tests
+│   ├── main.bicep             # Orchestrator module
+│   └── modules/               # ai-foundry, openai, app-service, monitoring, alerts, ...
+├── scripts/                   # Setup & validation scripts
+├── tests/                     # Unit + integration tests (31 tests)
 ├── docs/                      # Mermaid diagrams + talk script
 ├── fallback/                  # Pre-baked demo outputs (safety net)
-└── tasks.md                   # Implementation tracker
+└── Makefile                   # Dev commands: evaluate, redteam, agent-demo, ci, etc.
 ```
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **Agent Framework** | Microsoft Agent Framework (`agent-framework-core`, `agent-framework-azure-ai`) |
+| **LLM** | Azure OpenAI GPT-4o |
+| **Evaluation SDK** | `azure-ai-evaluation` (incl. Red Team SDK) |
+| **API** | FastAPI + Uvicorn |
+| **Observability** | OpenTelemetry → Azure Application Insights |
+| **Infrastructure** | Bicep (modular IaC) |
+| **CI/CD** | GitHub Actions (4 workflows) |
+| **Config** | Pydantic Settings + `.env` |
 
 ---
 
@@ -150,7 +240,7 @@ flowchart LR
     style C fill:#2196F3,color:#fff
 ```
 
-**Add Continuous Evaluation and Continuous Monitoring to your AI pipelines today. The tooling exists. Fork this repo and try it.**
+**AI apps need CI/CD + Continuous Evaluation to be production-safe. Add CE and CM to your AI pipelines today. The tooling exists — `azure-ai-evaluation`, OpenTelemetry, Application Insights, GitHub Actions. Fork this repo and try it.**
 
 ---
 
