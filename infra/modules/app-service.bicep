@@ -51,6 +51,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   sku: {
     name: 'P1v3'
     tier: 'PremiumV3'
+    capacity: 1
   }
   kind: 'linux'
   properties: {

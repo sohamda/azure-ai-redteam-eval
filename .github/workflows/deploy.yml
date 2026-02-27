@@ -77,16 +77,19 @@ jobs:
 
       - name: Deploy application code
         run: |
+          # Oryx looks for requirements.txt at the zip root
+          cp requirements-app.txt requirements.txt
+
           # Package app code (exclude non-essential files)
-          zip -r app.zip src/ requirements-app.txt startup.sh pyproject.toml \
+          zip -r app.zip src/ requirements.txt startup.sh pyproject.toml \
             -x "src/**/__pycache__/*" "src/**/*.pyc" "*.egg-info/*"
-          
-          # Deploy to App Service
-          az webapp deploy \
+
+          # Deploy via Kudu ZipDeploy (triggers Oryx build with SCM_DO_BUILD_DURING_DEPLOYMENT)
+          az webapp deployment source config-zip \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ steps.get-app.outputs.app_name }} \
-            --src-path app.zip \
-            --type zip
+            --src app.zip \
+            --timeout 600
 
       - name: Smoke test
         run: |
