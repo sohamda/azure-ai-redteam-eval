@@ -56,6 +56,19 @@ def setup_telemetry() -> None:
                 logger_name="src",
             )
             logger.info("Azure Monitor telemetry configured (connection string present)")
+
+            # Explicitly instrument httpx so outgoing calls (e.g. to Azure OpenAI)
+            # appear in the App Insights 'dependencies' table even when the SDK
+            # client was created before configure_azure_monitor ran.
+            try:
+                from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
+                HTTPXClientInstrumentor().instrument()
+                logger.info("httpx instrumented for dependency tracking")
+            except ImportError:
+                logger.debug("opentelemetry-instrumentation-httpx not installed — skipping")
+            except Exception as httpx_exc:
+                logger.debug("httpx instrumentation failed: %s", httpx_exc)
         except ImportError:
             logger.warning("azure-monitor-opentelemetry not installed — using default SDK providers")
             trace.set_tracer_provider(TracerProvider())

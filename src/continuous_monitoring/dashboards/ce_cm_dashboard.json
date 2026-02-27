@@ -111,7 +111,7 @@
         "query": "requests\n| where url endswith '/chat' or name has 'chat'\n| summarize p50=percentile(duration, 50), p95=percentile(duration, 95), p99=percentile(duration, 99) by bin(timestamp, 5m)\n| render timechart",
         "size": 0,
         "title": "Chat Endpoint Latency (P50/P95/P99 ms)",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 604800000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart"
@@ -125,7 +125,7 @@
         "query": "requests\n| where url endswith '/chat' or name has 'chat'\n| summarize total=count(), failed=countif(success == false), success_rate=round(100.0 * countif(success == true) / count(), 1) by bin(timestamp, 15m)\n| render timechart",
         "size": 0,
         "title": "Request Volume & Success Rate",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 604800000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart"
@@ -258,7 +258,7 @@
         "query": "requests\n| where success == false\n| project timestamp, name, url, resultCode, duration, operation_Id\n| order by timestamp desc\n| take 20",
         "size": 0,
         "title": "Recent Failed Requests",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 604800000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -272,7 +272,7 @@
         "query": "dependencies\n| where target has 'openai' or target has 'cognitiveservices'\n| summarize avg_duration=round(avg(duration), 0), call_count=count(), failure_rate=round(100.0 * countif(success == false) / count(), 1) by target, bin(timestamp, 15m)\n| render timechart",
         "size": 0,
         "title": "Azure OpenAI Dependency Health",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 604800000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart"
