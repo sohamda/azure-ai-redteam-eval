@@ -22,7 +22,7 @@
         "query": "union withsource=TableName customMetrics, requests, traces, exceptions, dependencies\n| summarize EventCount=count(), LatestEvent=max(timestamp) by TableName\n| extend HoursSinceLastEvent=round(datetime_diff('second', now(), LatestEvent) / 3600.0, 1)\n| project TableName, EventCount, LatestEvent, HoursSinceLastEvent\n| order by TableName asc",
         "size": 0,
         "title": "Data Ingestion Summary (all tables)",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -36,7 +36,7 @@
         "query": "customMetrics\n| where name startswith 'ce.' or name startswith 'agent.'\n| summarize EventCount=count(), AvgValue=round(avg(value), 2), LatestEvent=max(timestamp) by name\n| order by name asc",
         "size": 0,
         "title": "Custom Metrics Inventory (ce.* and agent.*)",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -57,7 +57,7 @@
         "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(\n    tostring(customDimensions.evaluator),\n    extract(@'ce\\.score\\.(.+)', 1, name)\n  )\n| where isnotempty(evaluator)\n| summarize avg_score=avg(value) by evaluator, bin(timestamp, 1h)\n| render timechart",
         "size": 0,
         "title": "Evaluation Score Trends (per evaluator)",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart",
@@ -75,7 +75,7 @@
         "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(\n    tostring(customDimensions.evaluator),\n    extract(@'ce\\.score\\.(.+)', 1, name)\n  )\n| where isnotempty(evaluator)\n| summarize arg_max(timestamp, value) by evaluator\n| project evaluator, score=round(value, 2), last_updated=format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss')\n| order by evaluator asc",
         "size": 0,
         "title": "Latest Evaluation Scores",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -89,7 +89,7 @@
         "query": "customMetrics\n| where name == 'ce.score.average'\n| summarize avg_score=avg(value) by bin(timestamp, 1h)\n| render areachart",
         "size": 0,
         "title": "Average Evaluation Score Over Time",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "areachart",
@@ -111,7 +111,7 @@
         "query": "requests\n| where url endswith '/chat' or name has 'chat'\n| summarize p50=percentile(duration, 50), p95=percentile(duration, 95), p99=percentile(duration, 99) by bin(timestamp, 5m)\n| render timechart",
         "size": 0,
         "title": "Chat Endpoint Latency (P50/P95/P99 ms)",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart"
@@ -125,7 +125,7 @@
         "query": "requests\n| where url endswith '/chat' or name has 'chat'\n| summarize total=count(), failed=countif(success == false), success_rate=round(100.0 * countif(success == true) / count(), 1) by bin(timestamp, 15m)\n| render timechart",
         "size": 0,
         "title": "Request Volume & Success Rate",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart"
@@ -139,7 +139,7 @@
         "query": "customMetrics\n| where name == 'agent.request.duration'\n| extend agent_name = tostring(customDimensions['agent.name'])\n| where isnotempty(agent_name)\n| summarize p50=percentile(value, 50), p95=percentile(value, 95), count=count() by agent_name\n| project agent_name, p50_ms=round(p50, 0), p95_ms=round(p95, 0), requests=count\n| order by requests desc",
         "size": 0,
         "title": "Per-Agent Latency & Request Count",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -153,7 +153,7 @@
         "query": "customMetrics\n| where name == 'agent.request.count'\n| extend agent_name = tostring(customDimensions['agent.name'])\n| where isnotempty(agent_name)\n| summarize total_requests=sum(value) by agent_name, bin(timestamp, 15m)\n| render barchart",
         "size": 0,
         "title": "Agent Request Volume Over Time",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "barchart"
@@ -167,7 +167,7 @@
         "query": "customMetrics\n| where name == 'agent.error.count'\n| extend agent_name = tostring(customDimensions['agent.name'])\n| summarize errors=sum(value) by agent_name, bin(timestamp, 15m)\n| render barchart",
         "size": 0,
         "title": "Agent Error Count",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "barchart"
@@ -181,7 +181,7 @@
         "query": "traces\n| where severityLevel >= 2\n| extend module = tostring(customDimensions.module)\n| summarize count() by severityLevel, bin(timestamp, 15m)\n| render barchart",
         "size": 0,
         "title": "Warning/Error Traces Over Time",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "barchart"
@@ -195,7 +195,7 @@
         "query": "traces\n| where message has 'agent' or message has 'orchestrator' or message has 'evaluation' or message has 'Tracked metric' or message has 'Exported'\n| project timestamp, message, severityLevel, customDimensions\n| order by timestamp desc\n| take 50",
         "size": 0,
         "title": "Recent Agent & Evaluation Log Messages",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -230,7 +230,7 @@
         "query": "customMetrics\n| where name startswith 'ce.score.' and name != 'ce.score.average'\n| extend evaluator = coalesce(tostring(customDimensions.evaluator), extract('ce[.]score[.](.+)', 1, name))\n| where isnotempty(evaluator)\n| extend latest_value = value, previous_value = value\n| summarize arg_max(timestamp, latest_value), arg_min(timestamp, previous_value) by evaluator\n| extend delta = round(latest_value - previous_value, 2)\n| project evaluator, latest_score=round(latest_value, 2), previous_score=round(previous_value, 2), delta\n| order by delta asc",
         "size": 0,
         "title": "Score Regressions (Latest vs Previous)",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -244,7 +244,7 @@
         "query": "exceptions\n| summarize count() by type, bin(timestamp, 1h)\n| render barchart",
         "size": 0,
         "title": "Exceptions Over Time",
-        "timeContext": { "durationMs": 86400000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "barchart"
@@ -258,7 +258,7 @@
         "query": "requests\n| where success == false\n| project timestamp, name, url, resultCode, duration, operation_Id\n| order by timestamp desc\n| take 20",
         "size": 0,
         "title": "Recent Failed Requests",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
@@ -272,7 +272,7 @@
         "query": "dependencies\n| where target has 'openai' or target has 'cognitiveservices'\n| summarize avg_duration=round(avg(duration), 0), call_count=count(), failure_rate=round(100.0 * countif(success == false) / count(), 1) by target, bin(timestamp, 15m)\n| render timechart",
         "size": 0,
         "title": "Azure OpenAI Dependency Health",
-        "timeContext": { "durationMs": 604800000 },
+        "timeContext": { "durationMs": 2592000000 },
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
         "visualization": "timechart"

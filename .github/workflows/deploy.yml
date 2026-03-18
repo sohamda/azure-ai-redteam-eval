@@ -100,6 +100,13 @@ jobs:
           echo "Testing https://${APP_HOSTNAME}/health ..."
           curl -sf "https://${APP_HOSTNAME}/health" || echo "⚠️ Smoke test failed (app may still be starting)"
 
+          # Send a chat request to generate telemetry for the CM dashboard
+          echo "Sending smoke chat request to https://${APP_HOSTNAME}/chat ..."
+          curl -sf -X POST "https://${APP_HOSTNAME}/chat" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "What is continuous evaluation?"}' \
+            -o /dev/null -w "  Status: %{http_code}, Time: %{time_total}s\n" || echo "⚠️ Chat smoke test failed"
+
   trigger-evaluation:
     name: Trigger Post-Deploy Evaluation
     needs: deploy

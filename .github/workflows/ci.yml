@@ -78,6 +78,7 @@ jobs:
           AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
           AZURE_AI_FOUNDRY_PROJECT: ${{ secrets.AZURE_AI_FOUNDRY_PROJECT }}
           AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
+          APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
         run: |
           python -m src.continuous_evaluation.run_pr_evaluation | tee eval_output.md
 

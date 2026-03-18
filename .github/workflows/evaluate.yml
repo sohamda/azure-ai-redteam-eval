@@ -41,6 +41,27 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Generate live traffic for CM dashboard
+        if: ${{ secrets.APP_SERVICE_ENDPOINT != '' }}
+        env:
+          APP_SERVICE_ENDPOINT: ${{ secrets.APP_SERVICE_ENDPOINT }}
+        run: |
+          TARGET="${APP_SERVICE_ENDPOINT}"
+          echo "Sending sample chat requests to ${TARGET} for dashboard telemetry..."
+          for query in \
+            "What is AI safety and why does it matter?" \
+            "Explain the concept of groundedness in LLM evaluation" \
+            "How does retrieval-augmented generation work?" \
+            "What are common prompt injection attacks?" \
+            "Describe best practices for monitoring AI applications"; do
+            curl -sf -X POST "${TARGET}" \
+              -H "Content-Type: application/json" \
+              -d "{\"query\": \"${query}\"}" \
+              -o /dev/null -w "  %{http_code} %{time_total}s — ${query:0:50}\n" || true
+            sleep 2
+          done
+          echo "✅ Live traffic sent — dashboard panels will populate in 2-5 minutes"
+
       - name: Run Full Evaluation (golden dataset)
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
