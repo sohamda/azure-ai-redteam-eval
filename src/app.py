@@ -55,8 +55,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
 
     # Ensure application logs always reach stdout (App Service Log stream).
-    # configure_azure_monitor may reconfigure the logging pipeline, so we
-    # add an explicit StreamHandler to the root logger first.
     root_logger = logging.getLogger()
     root_logger.setLevel(settings.log_level)
     if not any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers):
@@ -64,20 +62,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
         root_logger.addHandler(handler)
 
-    # Initialize OpenTelemetry → App Insights
+    # Initialize OpenTelemetry → App Insights.
+    # Must run inside lifespan (after uvicorn forks workers) so that the
+    # TracerProvider's BatchSpanProcessor threads are owned by this process.
     setup_telemetry()
-
-    # Explicitly instrument the *already-created* FastAPI app so that
-    # inbound HTTP requests appear in the App Insights 'requests' table.
-    # configure_azure_monitor() patches FastAPI.__init__ for NEW apps,
-    # but our 'app' object was created at module level before setup ran.
-    try:
-        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-        FastAPIInstrumentor.instrument_app(app)
-        logger.info("FastAPI app explicitly instrumented for request telemetry")
-    except Exception as exc:
-        logger.warning("Could not instrument FastAPI app: %s", exc)
 
     # Create agent-level metrics (counters, histograms)
     app.state.agent_metrics = create_agent_metrics()
@@ -102,6 +90,65 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+# ---------------------------------------------------------------------------
+# Request telemetry middleware — creates explicit SERVER spans so inbound
+# HTTP requests appear in App Insights 'requests' table.
+# Uses a raw ASGI middleware (not BaseHTTPMiddleware) to avoid context
+# propagation issues with Starlette's task-based dispatch.
+# ---------------------------------------------------------------------------
+
+from opentelemetry import trace as _otrace
+
+
+class _RequestSpanMiddleware:
+    """Raw ASGI middleware that wraps each HTTP request in a SERVER span."""
+
+    def __init__(self, app):  # type: ignore[no-untyped-def]
+        self.app = app
+
+    async def __call__(self, scope, receive, send):  # type: ignore[no-untyped-def]
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        method = scope.get("method", "UNKNOWN")
+        path = scope.get("path", "/")
+        scheme = scope.get("scheme", "http")
+        headers = dict(scope.get("headers", []))
+        host = headers.get(b"host", b"").decode("utf-8", errors="replace")
+        url = f"{scheme}://{host}{path}"
+
+        tracer = _otrace.get_tracer("src.app")
+        status_code = 200
+
+        async def _send_wrapper(message):  # type: ignore[no-untyped-def]
+            nonlocal status_code
+            if message.get("type") == "http.response.start":
+                status_code = message.get("status", 200)
+            await send(message)
+
+        with tracer.start_as_current_span(
+            f"{method} {path}",
+            kind=_otrace.SpanKind.SERVER,
+        ) as span:
+            span.set_attribute("http.method", method)
+            span.set_attribute("http.url", url)
+            span.set_attribute("http.target", path)
+            span.set_attribute("http.scheme", scheme)
+            span.set_attribute("http.host", host)
+            span.set_attribute("http.request.method", method)
+            span.set_attribute("url.full", url)
+            span.set_attribute("url.path", path)
+            span.set_attribute("url.scheme", scheme)
+            span.set_attribute("server.address", host)
+            await self.app(scope, receive, _send_wrapper)
+            span.set_attribute("http.status_code", status_code)
+            span.set_attribute("http.response.status_code", status_code)
+
+
+app.add_middleware(_RequestSpanMiddleware)  # type: ignore[arg-type]
 
 
 @app.get("/health")
