@@ -53,7 +53,16 @@ class ChatResponse(BaseModel):
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application startup and shutdown logic."""
     settings = get_settings()
-    logging.basicConfig(level=settings.log_level, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+
+    # Ensure application logs always reach stdout (App Service Log stream).
+    # configure_azure_monitor may reconfigure the logging pipeline, so we
+    # add an explicit StreamHandler to the root logger first.
+    root_logger = logging.getLogger()
+    root_logger.setLevel(settings.log_level)
+    if not any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
+        root_logger.addHandler(handler)
 
     # Initialize OpenTelemetry → App Insights
     setup_telemetry()
