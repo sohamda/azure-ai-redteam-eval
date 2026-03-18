@@ -42,11 +42,14 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Generate live traffic for CM dashboard
-        if: ${{ secrets.APP_SERVICE_ENDPOINT != '' }}
         env:
           APP_SERVICE_ENDPOINT: ${{ secrets.APP_SERVICE_ENDPOINT }}
         run: |
           TARGET="${APP_SERVICE_ENDPOINT}"
+          if [ -z "${TARGET}" ]; then
+            echo "⚠️ APP_SERVICE_ENDPOINT not set — skipping live traffic"
+            exit 0
+          fi
           echo "Sending sample chat requests to ${TARGET} for dashboard telemetry..."
           for query in \
             "What is AI safety and why does it matter?" \
