@@ -16,9 +16,8 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-
 from opentelemetry import trace as _otrace
+from pydantic import BaseModel
 
 from src.agents.orchestrator import run_orchestrator
 from src.config import get_settings
