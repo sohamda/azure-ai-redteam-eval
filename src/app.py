@@ -18,6 +18,8 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from opentelemetry import trace as _otrace
+
 from src.agents.orchestrator import run_orchestrator
 from src.config import get_settings
 from src.continuous_monitoring.telemetry import create_agent_metrics, flush_telemetry, get_tracer, setup_telemetry
@@ -98,8 +100,6 @@ app = FastAPI(
 # Uses a raw ASGI middleware (not BaseHTTPMiddleware) to avoid context
 # propagation issues with Starlette's task-based dispatch.
 # ---------------------------------------------------------------------------
-
-from opentelemetry import trace as _otrace
 
 
 class _RequestSpanMiddleware:
