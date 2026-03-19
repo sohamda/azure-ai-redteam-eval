@@ -16,6 +16,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from opentelemetry import trace as _otrace
 from pydantic import BaseModel
 
 from src.agents.orchestrator import run_orchestrator
@@ -98,8 +99,6 @@ app = FastAPI(
 # Uses a raw ASGI middleware (not BaseHTTPMiddleware) to avoid context
 # propagation issues with Starlette's task-based dispatch.
 # ---------------------------------------------------------------------------
-
-from opentelemetry import trace as _otrace
 
 
 class _RequestSpanMiddleware:
