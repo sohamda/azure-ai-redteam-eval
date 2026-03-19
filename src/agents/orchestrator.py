@@ -140,6 +140,7 @@ _SAFETY_TRIGGERS = [
     "social security",
     "credit card number",
     "password",
+    "BSN number",
 ]
 
 
