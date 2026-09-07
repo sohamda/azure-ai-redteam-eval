@@ -1,0 +1,15 @@
+{
+  "_comment": "Staged regressed run for the LIVE DEMO. Simulates a prompt/model change that dropped groundedness below both baseline and the 4.0 threshold. Compare against evaluation_baseline.json with: make demo-regression",
+  "scores": {
+    "groundedness": 3.2,
+    "gpt_groundedness": 3.2,
+    "coherence": 3.9,
+    "gpt_coherence": 3.9,
+    "relevance": 4.6,
+    "gpt_relevance": 4.6,
+    "fluency": 4.1,
+    "gpt_fluency": 4.1,
+    "conciseness": 4.9,
+    "binary_aggregate": 0.8
+  }
+}

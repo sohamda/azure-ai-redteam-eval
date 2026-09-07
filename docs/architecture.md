@@ -104,13 +104,18 @@ The evaluation subsystem in `src/continuous_evaluation/`:
 |-----------|------|----------|
 | Full evaluation | `run_evaluation.py` | Runs all evaluators against the 10-row golden dataset via `azure-ai-evaluation` |
 | PR evaluation | `run_pr_evaluation.py` | Fast 5-row eval for CI (< 60 seconds) |
-| Evaluators | `evaluators.py` | Groundedness, Coherence, Relevance, Fluency, Conciseness + custom `ConcisenessEvaluator` |
+| Evaluators | `evaluators.py` | 4 built-in quality (Groundedness, Coherence, Relevance, Fluency) + 2 safety (ContentSafety, ProtectedMaterial) + custom **LLM-as-judge** `ConcisenessEvaluator` (heuristic fallback) |
 | Thresholds | `thresholds.py` | Pass/warn/fail per evaluator — configurable via `CE_THRESHOLD_*` env vars |
 | Regression check | `regression_check.py` | Compares current vs. baseline scores, blocks if delta > 0.3 |
 | Score tracking | `score_tracker.py` | Pushes scores to App Insights as custom metrics (bridges CE → CM) |
 | Retry logic | `retry.py` | Exponential backoff for transient Azure AI evaluation failures |
 
-Red teaming (`src/redteam/`) is adversarial CE — uses the **Azure AI Evaluation Red Team SDK** (`RedTeam` class) with `AttackStrategy.Baseline` and `AttackStrategy.Jailbreak` strategies, plus custom probes for prompt injection, PII extraction, social engineering, and misinformation.
+Red teaming (`src/redteam/`) is adversarial CE and runs in **two phases with distinct taxonomies**:
+
+1. **Azure AI Evaluation Red Team SDK scan** (`RedTeam` class) — service-generated attack objectives across four `RiskCategory` values (Violence, HateUnfairness, Sexual, SelfHarm) combined with `AttackStrategy.Baseline` and `AttackStrategy.Jailbreak`.
+2. **Custom adversarial probes** — 10 curated probes across 6 application-specific categories (prompt injection, jailbreak, PII extraction, harmful content, social engineering, misinformation). This phase produces the pass/fail-by-category report.
+
+> Note: the custom-probe “blocked” check is a refusal/keyword heuristic — a reasonable gate signal, but production should also score refusals with a model-based evaluator (the SDK phase already does service-side evaluation).
 
 ### Continuous Monitoring (CM)
 

@@ -15,7 +15,7 @@ from pathlib import Path
 from azure.ai.evaluation import AzureAIProject, evaluate
 from azure.identity import DefaultAzureCredential
 
-from src.config import get_settings
+from src.config import configure_logging, get_settings
 from src.continuous_evaluation.evaluators import get_all_evaluators
 from src.continuous_evaluation.metrics import format_results_table, summarize_scores
 from src.continuous_evaluation.retry import retry_with_backoff
@@ -34,7 +34,7 @@ def _get_model_config() -> dict[str, str]:
     settings = get_settings()
     return {
         "azure_endpoint": settings.openai.endpoint,
-        "azure_deployment": settings.openai.deployment,
+        "azure_deployment": settings.openai.eval_deployment or settings.openai.deployment,
         "api_version": settings.openai.api_version,
     }
 
@@ -58,7 +58,7 @@ async def run_full_evaluation() -> dict[str, float]:
     Raises:
         SystemExit: If any evaluator score falls below its threshold.
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    configure_logging()
 
     # Initialize telemetry so eval scores flow to App Insights
     setup_telemetry()
@@ -84,7 +84,6 @@ async def run_full_evaluation() -> dict[str, float]:
         evaluate,
         data=str(DATASET_PATH),
         evaluators=evaluators,
-        azure_ai_project=azure_ai_project,
         evaluation_name="ce-full-evaluation",
         max_retries=3,
         base_delay=15.0,
@@ -92,7 +91,9 @@ async def run_full_evaluation() -> dict[str, float]:
 
     # Summarize scores
     scores = summarize_scores(results)
-    logger.info("\n%s", format_results_table(scores))
+    # Results go to stdout so they're visible even when telemetry captures the "src" logger.
+    print("\n## Continuous Evaluation — Full Results\n")
+    print(format_results_table(scores))
 
     # Export scores as custom metrics to App Insights (CE → CM bridge)
     export_eval_scores(scores, evaluation_name="ce-full-evaluation")
@@ -105,16 +106,16 @@ async def run_full_evaluation() -> dict[str, float]:
 
     # Check thresholds
     threshold_results = check_all_thresholds(scores)
-    logger.info("\nThreshold Check:")
+    print("\nThreshold Check:")
     for tr in threshold_results:
-        logger.info("  %s: %.2f (threshold: %.2f) → %s", tr.evaluator, tr.score, tr.threshold, tr.status.value)
+        print(f"  {tr.evaluator}: {tr.score:.2f} (threshold: {tr.threshold:.2f}) -> {tr.status.value}")
 
     if any_failures(threshold_results):
-        logger.error("EVALUATION FAILED — scores below thresholds. Deployment is unsafe.")
+        print("\n**EVALUATION FAILED** — scores below thresholds. Deployment is unsafe.")
         flush_telemetry(timeout_millis=15_000)
         sys.exit(1)
 
-    logger.info("EVALUATION PASSED — all scores meet thresholds.")
+    print("\n**EVALUATION PASSED** — all scores meet thresholds.")
     flush_telemetry(timeout_millis=15_000)
     return scores
 

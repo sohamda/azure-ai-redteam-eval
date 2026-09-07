@@ -11,6 +11,8 @@ import logging
 import sys
 from pathlib import Path
 
+from src.config import configure_logging
+
 logger = logging.getLogger(__name__)
 
 BASELINE_PATH = Path("evaluation_baseline.json")
@@ -113,8 +115,17 @@ def format_comparison_markdown(comparisons: list[dict[str, float | str]], has_re
     return "\n".join(lines)
 
 
-async def run_regression_check() -> bool:
+async def run_regression_check(
+    current_path: Path | None = None,
+    baseline_path: Path | None = None,
+    output_path: Path | None = None,
+) -> bool:
     """Run the regression check comparing current vs. baseline scores.
+
+    Args:
+        current_path: Path to current eval scores (defaults to evaluation_results.json).
+        baseline_path: Path to baseline eval scores (defaults to evaluation_baseline.json).
+        output_path: Where to write the comparison markdown (defaults to regression_comparison.md).
 
     Returns:
         True if no regressions detected, False if regressions found.
@@ -122,35 +133,39 @@ async def run_regression_check() -> bool:
     Raises:
         SystemExit: If regressions are detected (blocks CI pipeline).
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    configure_logging()
+
+    current = current_path or CURRENT_PATH
+    baseline = baseline_path or BASELINE_PATH
+    output = output_path or COMPARISON_OUTPUT
 
     logger.info("=" * 60)
     logger.info("REGRESSION CHECK — Comparing current vs. baseline")
     logger.info("=" * 60)
 
-    if not CURRENT_PATH.exists():
-        logger.error("Current results not found: %s. Run evaluation first.", CURRENT_PATH)
+    if not current.exists():
+        logger.error("Current results not found: %s. Run evaluation first.", current)
         sys.exit(1)
 
-    if not BASELINE_PATH.exists():
-        logger.warning("No baseline found at %s. Setting current results as baseline.", BASELINE_PATH)
+    if not baseline.exists():
+        logger.warning("No baseline found at %s. Setting current results as baseline.", baseline)
         import shutil
 
-        shutil.copy(CURRENT_PATH, BASELINE_PATH)
+        shutil.copy(current, baseline)
         print("Baseline created from current results. No comparison possible on first run.")
         return True
 
-    baseline = load_scores(BASELINE_PATH)
-    current = load_scores(CURRENT_PATH)
+    baseline_scores = load_scores(baseline)
+    current_scores = load_scores(current)
 
-    comparisons, has_regression = compare_scores(baseline, current)
+    comparisons, has_regression = compare_scores(baseline_scores, current_scores)
     report = format_comparison_markdown(comparisons, has_regression)
 
     print(report)
 
     # Save comparison report
-    COMPARISON_OUTPUT.write_text(report, encoding="utf-8")
-    logger.info("Comparison saved to %s", COMPARISON_OUTPUT)
+    output.write_text(report, encoding="utf-8")
+    logger.info("Comparison saved to %s", output)
 
     if has_regression:
         logger.error("REGRESSION DETECTED — deployment is unsafe.")
@@ -162,7 +177,21 @@ async def run_regression_check() -> bool:
 
 def main() -> None:
     """CLI entry point for `python -m src.continuous_evaluation.regression_check`."""
-    asyncio.run(run_regression_check())
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Compare eval scores against a baseline.")
+    parser.add_argument("--current", type=Path, default=None, help="Path to current eval scores JSON")
+    parser.add_argument("--baseline", type=Path, default=None, help="Path to baseline eval scores JSON")
+    parser.add_argument("--output", type=Path, default=None, help="Path to write the comparison markdown")
+    args = parser.parse_args()
+
+    asyncio.run(
+        run_regression_check(
+            current_path=args.current,
+            baseline_path=args.baseline,
+            output_path=args.output,
+        )
+    )
 
 
 if __name__ == "__main__":

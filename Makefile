@@ -25,6 +25,13 @@ evaluate-pr: ## Run lightweight Continuous Evaluation (PR subset — 5 rows)
 regression-check: ## Compare current eval scores against baseline, detect regressions
 	python -m src.continuous_evaluation.regression_check
 
+.PHONY: demo-regression
+demo-regression: ## DEMO: show CE blocking a regressed run (staged, no Azure calls)
+	@echo ">>> Simulating a code change that dropped groundedness. Running the same gate CI runs..."
+	-python -m src.continuous_evaluation.regression_check --current fallback/regressed_scores.json --output regression_comparison.md
+	@echo ""
+	@echo ">>> Exit code 1 — in CI this BLOCKS the deployment. That is Continuous Evaluation catching a regression before users do."
+
 .PHONY: redteam
 redteam: ## Run AI red-team probes against the deployed agents
 	python -m src.redteam.run_redteam

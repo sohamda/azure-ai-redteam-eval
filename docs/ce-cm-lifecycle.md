@@ -70,10 +70,10 @@ The `deploy.yml` workflow:
 ### 6. Full Continuous Evaluation (CE)
 
 The `evaluate.yml` workflow runs automatically after a successful deployment:
-- **Full evaluation** against the 10-row golden dataset using 5 evaluators: Groundedness, Coherence, Relevance, Fluency, and Conciseness (a custom evaluator)
+- **Full evaluation** against the 10-row golden dataset using 5 quality evaluators (Groundedness, Coherence, Relevance, Fluency, and a custom **LLM-as-judge** Conciseness evaluator) plus 2 safety evaluators (content safety, protected material)
 - **Regression check** — compares current scores against `evaluation_baseline.json`. If any score drops by more than 0.3 points, the pipeline **fails and alerts**
 - **Score tracking** — pushes evaluation scores as App Insights custom metrics, enabling trend monitoring
-- **Latest scores**: Groundedness 4.70 | Coherence 4.00 | Relevance 4.60 | Fluency 4.10 | Conciseness 4.95
+- **Representative scores**: Groundedness ≈4.7 | Coherence ≈4.0 | Relevance ≈4.6 | Fluency ≈4.1 | Conciseness ≈4.95 (actual values vary per run — the gate compares against baseline, not a fixed target)
 
 ### 7. Scores >= Baseline?
 
