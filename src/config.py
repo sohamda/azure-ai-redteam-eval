@@ -6,6 +6,8 @@ All Azure endpoints, model settings, and CE/CM thresholds are defined here.
 
 from __future__ import annotations
 
+import logging
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,6 +24,12 @@ class AzureOpenAISettings(BaseSettings):
 
     endpoint: str = Field(default="", description="Azure OpenAI endpoint URL")
     deployment: str = Field(default="gpt-4o", description="Model deployment name")
+    eval_deployment: str = Field(
+        default="",
+        description="Judge/evaluator deployment (a gpt-4o-class chat model). "
+        "Falls back to `deployment` when empty. Reasoning models (o-series, GPT-5) "
+        "reject the `max_tokens` param the evaluators send, so use gpt-4o / gpt-4.1 / gpt-4o-mini here.",
+    )
     api_version: str = Field(default="2024-12-01-preview", description="API version")
 
 
@@ -106,3 +114,30 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Create and return the application settings singleton."""
     return Settings()
+
+
+# Third-party loggers that emit high-volume INFO/DEBUG noise during eval/red-team runs.
+_NOISY_LOGGERS = (
+    "azure",
+    "httpx",
+    "httpcore",
+    "urllib3",
+    "openai",
+    "promptflow",
+    "execution",
+    "execution.bulk",
+)
+
+
+def configure_logging(level: str | None = None) -> None:
+    """Configure root logging from LOG_LEVEL and quiet noisy SDK loggers.
+
+    Args:
+        level: Explicit level override; falls back to the LOG_LEVEL setting.
+    """
+    resolved = (level or get_settings().log_level or "INFO").upper()
+    logging.basicConfig(level=resolved, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    # Keep our own "src.*" logs at the chosen level but silence chatty SDKs unless DEBUG was requested.
+    if resolved != "DEBUG":
+        for name in _NOISY_LOGGERS:
+            logging.getLogger(name).setLevel(logging.WARNING)

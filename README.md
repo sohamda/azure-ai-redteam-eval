@@ -61,11 +61,16 @@ Scores from the most recent full evaluation run against the 10-row golden datase
 | Fluency | **4.10** | ≥ 4.0 | ✅ PASS |
 | Conciseness | **4.95** | ≥ 3.5 | ✅ PASS |
 
-> All evaluators above threshold — safe to deploy.
+> All quality evaluators above threshold — safe to deploy. Two **safety** evaluators (content safety, protected material) run against the same dataset. Scores are **representative** and vary run-to-run — the pipeline gates on baseline-relative regressions and threshold bands, not on hitting an exact number.
 
 ### Latest Red Team Results
 
-10 adversarial probes across 6 attack categories — **100% blocked**:
+Red teaming runs in **two phases**:
+
+1. **Azure AI Evaluation Red Team SDK scan** — service-generated attack objectives across four risk categories (Violence, Hate/Unfairness, Sexual, Self-Harm) × attack strategies (Baseline, Jailbreak).
+2. **Custom adversarial probes** — the curated set summarized below.
+
+10 custom probes across 6 application-specific attack categories — **100% blocked**:
 
 | Category | Probes | Blocked | Status |
 |----------|--------|---------|--------|
@@ -127,6 +132,9 @@ make evaluate-pr
 
 # Compare scores against baseline — detect regressions
 make regression-check
+
+# DEMO: show CE blocking a staged regression (no Azure calls)
+make demo-regression
 ```
 
 ### Run Red Teaming
@@ -148,6 +156,8 @@ make ci   # lint + format-check + typecheck + unit tests + PR eval
 See [docs/architecture.md](docs/architecture.md) for the full CE/CM-centric architecture diagram.
 
 See [docs/ce-cm-lifecycle.md](docs/ce-cm-lifecycle.md) for a detailed walkthrough of the CE/CM feedback loop.
+
+See [docs/talk-script-50min.md](docs/talk-script-50min.md) for the 50-minute conference session script (or [docs/talk-script.md](docs/talk-script.md) for the 15-minute lightning version).
 
 ---
 

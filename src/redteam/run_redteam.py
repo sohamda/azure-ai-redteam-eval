@@ -16,7 +16,7 @@ from typing import Any
 from azure.ai.evaluation.red_team import AttackStrategy, RedTeam, RiskCategory
 from azure.identity import DefaultAzureCredential
 
-from src.config import get_settings
+from src.config import configure_logging, get_settings
 from src.redteam.attack_strategies import get_attack_categories, run_adversarial_probes
 from src.redteam.report import generate_report
 
@@ -194,7 +194,7 @@ async def run_redteam() -> None:
     Raises:
         SystemExit: If critical findings are detected.
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    configure_logging()
 
     logger.info("=" * 60)
     logger.info("AI RED TEAMING — Adversarial Evaluation")
