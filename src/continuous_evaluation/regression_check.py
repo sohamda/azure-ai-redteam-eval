@@ -55,10 +55,12 @@ def compare_scores(
     comparisons: list[dict[str, float | str]] = []
     has_regression = False
 
-    all_evaluators = set(baseline.keys()) | set(current.keys())
-    for evaluator in sorted(all_evaluators):
+    # Compare only metrics present in the current run. Metrics in the baseline but missing
+    # from current are skipped (usually SDK key renames, e.g. gpt_groundedness ->
+    # groundedness_score across azure-ai-evaluation versions) rather than treated as a drop to 0.
+    for evaluator in sorted(current.keys()):
         base_score = baseline.get(evaluator, 0.0)
-        curr_score = current.get(evaluator, 0.0)
+        curr_score = current[evaluator]
         delta = curr_score - base_score
 
         if delta < -regression_threshold:
