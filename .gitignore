@@ -52,3 +52,6 @@ desktop.ini
 evaluation_results*.json
 redteam_report*.json
 regression_*.json
+redteam_sdk_result*.json
+redteam_scan_output/
+.scan_*/
