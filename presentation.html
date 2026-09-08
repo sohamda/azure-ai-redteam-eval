@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Continuous Evaluation &amp; Monitoring for AI — Techorama (50 min)</title>
+<script>
+  // Clawpilot theme detection — defaults to dark (stage-friendly) unless the OS explicitly prefers light or ?scoutTheme= is set.
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme = param || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --cp-bg: #f7f4ef;
+    --cp-bg-elevated: #fcfbf8;
+    --cp-surface: #ffffff;
+    --cp-surface-soft: #f5f5f5;
+    --cp-border: #dedede;
+    --cp-border-strong: #919191;
+    --cp-text: #242424;
+    --cp-text-muted: #5c5c5c;
+    --cp-text-soft: #6f6f6f;
+    --cp-accent: #b11f4b;
+    --cp-accent-hover: #9a1a41;
+    --cp-accent-soft: rgba(177, 31, 75, 0.08);
+    --cp-accent-fg: #ffffff;
+    --cp-success: #16a34a;
+    --cp-danger: #dc2626;
+    --cp-warning: #f59e0b;
+    --cp-link: #0078d4;
+    --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+    --cp-overlay: rgba(255, 255, 255, 0.8);
+    --cp-panel: rgba(255, 255, 255, 0.86);
+    --cp-panel-strong: rgba(255, 255, 255, 0.96);
+    --cp-sheen: rgba(255, 255, 255, 0.55);
+    --cp-highlight: rgba(177, 31, 75, 0.12);
+    --cp-diagram-plate: #ffffff;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --cp-bg: #3d3b3a;
+    --cp-bg-elevated: #343231;
+    --cp-surface: #292929;
+    --cp-surface-soft: #2e2e2e;
+    --cp-border: #474747;
+    --cp-border-strong: #5f5f5f;
+    --cp-text: #dedede;
+    --cp-text-muted: #919191;
+    --cp-text-soft: #b0b0b0;
+    --cp-accent: #fd8ea1;
+    --cp-accent-hover: #fb7b91;
+    --cp-accent-soft: rgba(253, 142, 161, 0.14);
+    --cp-accent-fg: #1a1a1a;
+    --cp-success: #4ade80;
+    --cp-danger: #f87171;
+    --cp-warning: #fbbf24;
+    --cp-link: #4da6ff;
+    --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+    --cp-overlay: rgba(41, 41, 41, 0.88);
+    --cp-panel: rgba(41, 41, 41, 0.72);
+    --cp-panel-strong: rgba(41, 41, 41, 0.96);
+    --cp-sheen: rgba(255, 255, 255, 0.04);
+    --cp-highlight: rgba(253, 142, 161, 0.12);
+    --cp-diagram-plate: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--cp-bg);
+    color: var(--cp-text);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
+
+  /* ---------- deck / slides ---------- */
+  #deck { height: 100vh; width: 100vw; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    padding: 4.2vh 5vw 8vh;
+    display: none;
+    flex-direction: column;
+    gap: 1.1rem;
+    overflow-y: auto;
+    animation: fade .35s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .slide-head { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+  .act-badge {
+    font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--cp-accent-fg); background: var(--cp-accent);
+    padding: .28rem .7rem; border-radius: 999px;
+  }
+  .time-badge {
+    font-size: .72rem; font-weight: 600; color: var(--cp-text-muted);
+    border: 1px solid var(--cp-border); border-radius: 999px; padding: .26rem .7rem;
+  }
+  h1 { font-size: clamp(1.8rem, 4.2vw, 3.4rem); line-height: 1.08; letter-spacing: -.01em; }
+  h2 { font-size: clamp(1.4rem, 3vw, 2.3rem); line-height: 1.12; letter-spacing: -.01em; }
+  h3 { font-size: clamp(1.05rem, 1.6vw, 1.35rem); color: var(--cp-text); margin-bottom: .3rem; }
+  p, li { font-size: clamp(.98rem, 1.4vw, 1.22rem); line-height: 1.5; color: var(--cp-text); }
+  .muted { color: var(--cp-text-muted); }
+  .accent { color: var(--cp-accent); font-weight: 600; }
+  .ok { color: var(--cp-success); font-weight: 700; }
+  .bad { color: var(--cp-danger); font-weight: 700; }
+  .warn { color: var(--cp-warning); font-weight: 700; }
+  .cm { color: var(--cp-link); font-weight: 700; }
+  strong { font-weight: 700; }
+
+  ul, ol { padding-left: 1.3rem; display: flex; flex-direction: column; gap: .5rem; }
+  li::marker { color: var(--cp-accent); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; align-items: start; flex: 1; min-height: 0; }
+  .cols.wide-left { grid-template-columns: 1.15fr .85fr; }
+  .cols.wide-right { grid-template-columns: .8fr 1.2fr; }
+  .stack { display: flex; flex-direction: column; gap: .9rem; min-width: 0; }
+
+  .card {
+    background: var(--cp-surface); border: 1px solid var(--cp-border);
+    border-radius: 16px; padding: 1.1rem 1.25rem;
+    box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+  }
+  .card.soft { background: var(--cp-surface-soft); }
+  .card.accent-l { border-left: 4px solid var(--cp-accent); }
+  .card.ok-l { border-left: 4px solid var(--cp-success); }
+  .card.bad-l { border-left: 4px solid var(--cp-danger); }
+  .card.cm-l { border-left: 4px solid var(--cp-link); }
+  .card.warn-l { border-left: 4px solid var(--cp-warning); }
+
+  blockquote.cue {
+    border-left: 4px solid var(--cp-accent);
+    background: var(--cp-accent-soft);
+    padding: .85rem 1.1rem; border-radius: 0 12px 12px 0;
+    font-size: clamp(1rem, 1.5vw, 1.28rem); line-height: 1.45;
+  }
+  blockquote.cue::before { content: "🎤 "; opacity: .8; }
+
+  video, .shot img {
+    width: 100%; border-radius: 14px; border: 1px solid var(--cp-border);
+    background: #000; box-shadow: var(--cp-shadow); display: block;
+    max-height: 62vh; object-fit: contain;
+  }
+  .shot img { object-fit: contain; background: var(--cp-surface-soft); }
+  figcaption { font-size: .82rem; color: var(--cp-text-muted); margin-top: .4rem; }
+  .media-hint {
+    font-size: .74rem; color: var(--cp-text-soft); margin-top: .3rem;
+    font-family: Consolas, monospace;
+  }
+
+  img.diagram {
+    width: 100%; max-height: 70vh; object-fit: contain;
+    background: var(--cp-diagram-plate); border: 1px solid var(--cp-border);
+    border-radius: 14px; padding: 1rem;
+  }
+  img.shotimg {
+    width: 100%; max-height: 58vh; object-fit: contain;
+    background: var(--cp-diagram-plate); border: 1px solid var(--cp-border);
+    border-radius: 12px; padding: .5rem;
+  }
+  .qr { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .qr img {
+    width: clamp(160px, 20vw, 240px); height: auto;
+    background: #fff; padding: 12px; border-radius: 14px; border: 1px solid var(--cp-border);
+    box-shadow: var(--cp-shadow);
+  }
+  .qr span { font-size: .85rem; color: var(--cp-text-muted); font-weight: 600; }
+
+  pre {
+    background: var(--cp-bg-elevated); border: 1px solid var(--cp-border);
+    border-radius: 12px; padding: .9rem 1.05rem; overflow: auto;
+    font-size: clamp(.72rem, 1.02vw, .92rem); line-height: 1.5; color: var(--cp-text);
+  }
+  pre .c { color: var(--cp-text-soft); font-style: italic; }
+  pre .k { color: var(--cp-accent); font-weight: 600; }
+  pre .s { color: var(--cp-success); }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: clamp(.82rem, 1.15vw, 1.02rem); }
+  table.data th, table.data td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--cp-border); }
+  table.data th { color: var(--cp-text-muted); font-weight: 600; font-size: .82em; text-transform: uppercase; letter-spacing: .03em; }
+  table.data td.num { font-family: Consolas, monospace; }
+
+  .badges { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .pill { font-size: .78rem; font-weight: 600; padding: .3rem .7rem; border-radius: 999px; border: 1px solid var(--cp-border); }
+  .pill.g { background: var(--cp-success); color: #fff; border-color: transparent; }
+  .pill.b { background: var(--cp-link); color: #fff; border-color: transparent; }
+  .pill.a { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: transparent; }
+
+  .kpis { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .kpi { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 14px; padding: .8rem 1.1rem; min-width: 130px; }
+  .kpi .n { font-size: clamp(1.4rem, 3vw, 2.2rem); font-weight: 800; line-height: 1; }
+  .kpi .l { font-size: .8rem; color: var(--cp-text-muted); margin-top: .35rem; }
+
+  .lead { font-size: clamp(1.1rem, 1.8vw, 1.5rem); color: var(--cp-text-muted); }
+
+  /* ---------- title ---------- */
+  .title-slide { justify-content: center; align-items: flex-start; gap: 1.4rem; }
+  .title-slide .eyebrow { color: var(--cp-accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: clamp(.8rem,1.2vw,1rem); }
+  .repo-url { font-family: Consolas, monospace; color: var(--cp-link); font-size: clamp(.9rem,1.3vw,1.1rem); }
+
+  /* ---------- chrome ---------- */
+  #progress { position: fixed; left: 0; bottom: 0; height: 4px; background: var(--cp-accent); width: 0; transition: width .25s ease; z-index: 40; }
+  #hud {
+    position: fixed; right: 1rem; bottom: .9rem; z-index: 41;
+    display: flex; align-items: center; gap: .55rem;
+    font-size: .78rem; color: var(--cp-text-muted);
+    background: var(--cp-panel); border: 1px solid var(--cp-border);
+    padding: .3rem .5rem; border-radius: 999px; backdrop-filter: blur(6px);
+  }
+  #hud button {
+    font: inherit; cursor: pointer; color: var(--cp-text);
+    background: var(--cp-surface); border: 1px solid var(--cp-border);
+    border-radius: 8px; padding: .2rem .5rem; line-height: 1;
+  }
+  #hud button:hover { border-color: var(--cp-accent); color: var(--cp-accent); }
+  #counter { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--cp-text); }
+  #actlabel { position: fixed; left: 1.2rem; bottom: 1rem; z-index: 41; font-size: .78rem; color: var(--cp-text-soft); max-width: 40vw; }
+
+  /* speaker notes */
+  .notes { display: none; }
+  body.show-notes .notes {
+    display: block; margin-top: .4rem;
+    background: var(--cp-bg-elevated); border: 1px dashed var(--cp-border-strong);
+    border-radius: 12px; padding: .8rem 1rem; color: var(--cp-text-muted);
+    font-size: clamp(.85rem, 1.15vw, 1rem);
+  }
+  .notes b { color: var(--cp-text); }
+
+  /* help overlay */
+  #help {
+    position: fixed; inset: 0; z-index: 60; display: none;
+    background: var(--cp-overlay); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  #help.show { display: flex; }
+  #help .box { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px; padding: 1.6rem 2rem; box-shadow: var(--cp-shadow); max-width: 520px; }
+  #help kbd {
+    font-family: Consolas, monospace; background: var(--cp-bg-elevated);
+    border: 1px solid var(--cp-border-strong); border-radius: 6px; padding: .1rem .45rem; font-size: .85em;
+  }
+  #help table { border-collapse: collapse; }
+  #help td { padding: .35rem .6rem; border-bottom: 1px solid var(--cp-border); }
+
+  /* overview grid */
+  #overview { position: fixed; inset: 0; z-index: 55; display: none; padding: 3vh 3vw; overflow-y: auto; background: var(--cp-bg); }
+  #overview.show { display: block; }
+  #overview h2 { margin-bottom: 1rem; }
+  .ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .ov-card { text-align: left; cursor: pointer; background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 12px; padding: .8rem 1rem; color: var(--cp-text); font: inherit; }
+  .ov-card:hover { border-color: var(--cp-accent); }
+  .ov-card .num { font-size: .75rem; color: var(--cp-accent); font-weight: 700; }
+  .ov-card .t { font-size: .95rem; font-weight: 600; margin-top: .2rem; }
+  .ov-card .m { font-size: .78rem; color: var(--cp-text-muted); margin-top: .2rem; }
+
+  /* video enlarge + lightbox */
+  .video-wrap { position: relative; width: 100%; }
+  .enlarge-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 6;
+    font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer;
+    color: var(--cp-text); background: var(--cp-panel-strong);
+    border: 1px solid var(--cp-border); border-radius: 8px; padding: .3rem .55rem;
+    backdrop-filter: blur(6px); opacity: .9;
+  }
+  .enlarge-btn:hover { opacity: 1; border-color: var(--cp-accent); color: var(--cp-accent); }
+  #lightbox {
+    position: fixed; inset: 0; z-index: 70; display: none;
+    background: rgba(0,0,0,.92); align-items: center; justify-content: center; flex-direction: column; gap: .9rem;
+    padding: 2vh 2vw;
+  }
+  #lightbox.show { display: flex; }
+  #lightbox video {
+    width: 94vw; height: 84vh; max-width: 94vw; max-height: 84vh;
+    object-fit: contain; background: #000; border-radius: 10px; box-shadow: var(--cp-shadow);
+  }
+  #lightbox .lb-close {
+    position: absolute; top: 1rem; right: 1.4rem; font: inherit; font-size: 1.3rem; line-height: 1;
+    cursor: pointer; color: #fff; background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.35); border-radius: 10px; padding: .25rem .7rem;
+  }
+  #lightbox .lb-close:hover { background: rgba(255,255,255,.28); }
+  #lightbox .lb-hint { color: rgba(255,255,255,.72); font-size: .85rem; }
+
+  @media (max-width: 900px) {
+    .cols, .cols.wide-left, .cols.wide-right { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1 · TITLE -->
+  <section class="slide title-slide" data-act="Techorama" data-time="Intro">
+    <div class="eyebrow">Techorama · ~50 min + Q&amp;A · driven live from the repo</div>
+    <h1>Continuous Evaluation &amp; Monitoring<br />for AI Applications</h1>
+    <p class="lead">GenAI apps need the same CI/CD rigour as traditional apps — <span class="accent">plus</span> Continuous Evaluation (gates quality before ship) and Continuous Monitoring (watches quality in prod). The two form a loop.</p>
+    <div class="badges">
+      <span class="pill g">CE · all thresholds passed</span>
+      <span class="pill a">Red Team · 100% blocked</span>
+      <span class="pill b">CM · live dashboard</span>
+    </div>
+    <p class="repo-url">github.com/sohamda/azure-ai-redteam-eval</p>
+    <p class="muted" style="font-size:.85rem">Press <b>?</b> for shortcuts · <b>→</b> to advance · <b>N</b> toggles speaker notes · <b>T</b> toggles light/dark</p>
+    <div class="notes"><b>Setup:</b> Full-screen this deck (press F). All demos are pre-recorded (terminal + Azure) so nothing depends on local/Azure/wifi. Click a video to play; it pauses automatically when you move on.</div>
+  </section>
+
+  <!-- 2 · RUN OF SHOW -->
+  <section class="slide" data-act="Agenda" data-time="Run of show">
+    <div class="slide-head"><span class="act-badge">Run of show</span></div>
+    <h2>Seven acts, one loop</h2>
+    <table class="data">
+      <thead><tr><th>Act</th><th>Topic</th><th>Time</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Hook + the pain — why CE/CM exists</td><td class="num">0:00–7:00</td></tr>
+        <tr><td>2</td><td>The CE/CM lifecycle + architecture</td><td class="num">7:00–15:00</td></tr>
+        <tr><td>3</td><td>The app under test (brief agent demo)</td><td class="num">15:00–20:00</td></tr>
+        <tr><td>4</td><td><span class="accent">Continuous Evaluation</span> — the centerpiece</td><td class="num">20:00–32:00</td></tr>
+        <tr><td>5</td><td>Red teaming — adversarial CE (two phases)</td><td class="num">32:00–39:00</td></tr>
+        <tr><td>6</td><td><span class="cm">Continuous Monitoring</span> — production loop</td><td class="num">39:00–45:00</td></tr>
+        <tr><td>7</td><td>CI/CD wiring + takeaway</td><td class="num">45:00–50:00</td></tr>
+      </tbody>
+    </table>
+    <div class="notes"><b>Checkpoints:</b> hook done by 7:00; lifecycle+arch by 15:00; start full eval by 20:00; <b>regression block by 24:00 — never skip it</b>; red team by 32:00; monitoring by 39:00; takeaway by 45:00.</div>
+  </section>
+
+  <!-- 3 · ACT 1 HOOK -->
+  <section class="slide" data-act="Act 1" data-time="0:00–7:00">
+    <div class="slide-head"><span class="act-badge">Act 1</span><span class="time-badge">Hook + the pain</span></div>
+    <h2>GenAI fails <span class="bad">silently</span> and plausibly</h2>
+    <div class="cols">
+      <div class="stack">
+        <blockquote class="cue">"Show of hands — who has CI/CD? Keep them up if that pipeline also checks whether your AI's <em>answers</em> are any good." <span class="muted">(most hands drop)</span></blockquote>
+        <div class="card accent-l">
+          <p>A team ships a prompt tweak — <em>"be more helpful."</em> Tests pass. Lint passes. It deploys. Two weeks later the assistant is confidently making things up. Groundedness quietly dropped <strong>15%</strong>.</p>
+          <p style="margin-top:.6rem"><span class="bad">Nothing failed. No alert fired. No test was red.</span> None of their gates could see quality.</p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>Traditional software</h3>
+          <p>Fails <strong>loudly</strong> — a stack trace, a 500.</p>
+        </div>
+        <div class="card bad-l">
+          <h3>GenAI</h3>
+          <p>Fails <strong>silently</strong> — a wrong answer looks exactly like a right answer. <em>That's the whole problem.</em></p>
+        </div>
+      </div>
+    </div>
+    <div class="notes"><b>Tell the story, don't rush.</b> On screen normally: the repo README badges. Land the contrast: loud vs. silent failure. Transition: "So we need two new habits…"</div>
+  </section>
+
+  <!-- 4 · ACT 1 REFRAME -->
+  <section class="slide" data-act="Act 1" data-time="reframe">
+    <div class="slide-head"><span class="act-badge">Act 1</span><span class="time-badge">The reframe</span></div>
+    <h2>Two new habits</h2>
+    <div class="cols">
+      <div class="card ok-l">
+        <h3><span class="ok">Continuous Evaluation (CE)</span></h3>
+        <p>Every change is scored for quality <strong>before</strong> it reaches users. A regression <strong>blocks the ship</strong> — exactly like a failing unit test.</p>
+      </div>
+      <div class="card cm-l">
+        <h3><span class="cm">Continuous Monitoring (CM)</span></h3>
+        <p>Production is watched for quality drift in real time. What we learn there becomes <strong>new test cases</strong>.</p>
+      </div>
+    </div>
+    <div class="card soft">
+      <h3>Latest evaluation — golden dataset (10 rows)</h3>
+      <table class="data">
+        <thead><tr><th>Evaluator</th><th>Score</th><th>Threshold</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Groundedness</td><td class="num">4.70</td><td class="num">≥ 4.0</td><td class="ok">PASS</td></tr>
+          <tr><td>Coherence</td><td class="num">4.00</td><td class="num">≥ 4.0</td><td class="ok">PASS</td></tr>
+          <tr><td>Relevance</td><td class="num">4.60</td><td class="num">≥ 4.0</td><td class="ok">PASS</td></tr>
+          <tr><td>Fluency</td><td class="num">4.10</td><td class="num">≥ 4.0</td><td class="ok">PASS</td></tr>
+          <tr><td>Conciseness <span class="muted">(custom)</span></td><td class="num">4.95</td><td class="num">≥ 3.5</td><td class="ok">PASS</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notes"><b>Say:</b> "Everything I show is in one public repo. No slides — it's all code and terminals." Scores are representative and vary run-to-run; we gate on baseline-relative regressions, not exact numbers. Transition: "Let me show you the loop first."</div>
+  </section>
+
+  <!-- 5 · ACT 2 LIFECYCLE -->
+  <section class="slide" data-act="Act 2" data-time="7:00–15:00">
+    <div class="slide-head"><span class="act-badge">Act 2</span><span class="time-badge">The CE/CM lifecycle</span></div>
+    <h2>The loop never ends</h2>
+    <div class="cols wide-left">
+      <figure class="shot"><img class="diagram" src="presentation_assets/lifecycle.svg" alt="CE/CM lifecycle loop" /></figure>
+      <div class="stack">
+        <ul>
+          <li>A change opens a PR → <code>ci.yml</code> runs a <strong>lightweight eval</strong>. Under threshold, the PR can't merge.</li>
+          <li>Merge → deploy → <code>evaluate.yml</code> runs the <strong>full eval</strong> + a <strong>regression check</strong> vs. last known-good baseline.</li>
+          <li>Regression? <span class="bad">Rollout blocked, alert fired.</span> Clean? It serves traffic — every request emits telemetry.</li>
+          <li><span class="cm">CM</span> watches eval scores, latency, safety flags. An anomaly → investigation → <strong>a new row in the golden dataset.</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="notes"><b>~30s per hop.</b> This is the hero diagram. Land the final line: "CE feeds CM; CM feeds CE. The system gets safer every iteration — automatically."</div>
+  </section>
+
+  <!-- 6 · ACT 2 ARCHITECTURE -->
+  <section class="slide" data-act="Act 2" data-time="architecture">
+    <div class="slide-head"><span class="act-badge">Act 2</span><span class="time-badge">Architecture</span></div>
+    <h2>Same story, wider lens</h2>
+    <div class="cols wide-left">
+      <figure class="shot"><img class="diagram" src="presentation_assets/architecture.svg" alt="CE/CM-centric architecture" /></figure>
+      <div class="stack">
+        <ul>
+          <li><strong>Four GitHub Actions</strong> on the left. Azure infra in the middle (OpenAI, AI Foundry, App Insights) — all Bicep.</li>
+          <li>The multi-agent app is <em>the thing being evaluated</em> — deliberately not the star.</li>
+          <li>The stars: <span class="ok">CE</span> feeding scores in, <span class="cm">CM</span> turning scores into metrics + alerts.</li>
+        </ul>
+        <blockquote class="cue">"Doesn't Foundry already have online eval? It does — and it's great. This is the <strong>portable, CI-gating</strong> version: evaluators as code, thresholds in version control, regressions failing an Action. Use the platform, this pattern, or both. The <em>discipline</em> is the point."</blockquote>
+      </div>
+    </div>
+    <div class="notes"><b>Say the honest positioning line early</b> — an expert audience is already thinking it. Transition: "Here's the app we're going to grade."</div>
+  </section>
+
+  <!-- 7 · ACT 3 APP -->
+  <section class="slide" data-act="Act 3" data-time="15:00–20:00">
+    <div class="slide-head"><span class="act-badge">Act 3</span><span class="time-badge">The app under test</span></div>
+    <h2>A multi-agent assistant — but is it any <em>good?</em></h2>
+    <div class="cols wide-left">
+      <figure class="shot">
+        <video src="fallback/recordings/make_agent_demo.mp4" controls preload="metadata"></video>
+        <figcaption>Recording · <code>make agent-demo</code> → chat UI at localhost:8000</figcaption>
+        <div class="media-hint">fallback/recordings/make_agent_demo.mp4</div>
+      </figure>
+      <div class="stack">
+        <div class="card"><p>Orchestrator on the Microsoft Agent Framework routes through a <span class="accent">planner</span>, a <span class="accent">retrieval</span> agent (grounding), and a <span class="accent">safety</span> agent (guardrails).</p></div>
+        <div class="card soft"><p class="mono" style="font-size:.9rem">Prompt: "What are the best practices for deploying AI apps to Azure?"</p></div>
+        <p>"The framework choice doesn't matter for this talk. What matters is the question you <strong>can't</strong> answer by looking: <span class="accent">is this response actually good?</span> You can't eyeball that at scale."</p>
+      </div>
+    </div>
+    <div class="notes"><b>Keep tight — 5 min max.</b> Point at the agents in the response. Transition: "Let's grade it. Objectively. Repeatably." Static fallback text: fallback/agent_demo_output.txt.</div>
+  </section>
+
+  <!-- 8 · ACT 4a FULL EVAL -->
+  <section class="slide" data-act="Act 4" data-time="20:00–24:00">
+    <div class="slide-head"><span class="act-badge">Act 4a</span><span class="time-badge">Continuous Evaluation — full run</span></div>
+    <h2>A number and a gate — no vibes</h2>
+    <div class="cols wide-left">
+      <figure class="shot">
+        <video src="fallback/recordings/make_evaluate.mp4" controls preload="metadata"></video>
+        <figcaption>Recording · <code>make evaluate</code> — full eval vs. golden dataset</figcaption>
+        <div class="media-hint">fallback/recordings/make_evaluate.mp4</div>
+      </figure>
+      <div class="stack">
+        <p>The <code>azure-ai-evaluation</code> SDK scores five quality dimensions — <strong>Groundedness, Coherence, Relevance, Fluency</strong> + a custom <strong>Conciseness</strong> — plus two safety evaluators (content safety, protected material).</p>
+        <div class="card ok-l"><p>Every score has a threshold — <strong>4.0</strong> for quality metrics. Under threshold, the pipeline fails. No human in the loop.</p></div>
+      </div>
+    </div>
+    <div class="notes"><b>Say:</b> if the room's network is slow, scroll to the pre-run result instead. Then open the code (next slide).</div>
+  </section>
+
+  <!-- 9 · ACT 4a CODE -->
+  <section class="slide" data-act="Act 4" data-time="evaluators + thresholds">
+    <div class="slide-head"><span class="act-badge">Act 4a</span><span class="time-badge">The extension point</span></div>
+    <h2>Custom evaluator = <span class="accent">your</span> domain metric</h2>
+    <div class="cols">
+      <div class="stack">
+        <h3>Conciseness — LLM-as-judge <span class="muted">(evaluators.py)</span></h3>
+<pre><span class="c"># Prompts the model to score 1–5 with a reason.</span>
+<span class="k">class</span> ConcisenessEvaluator:
+    <span class="k">def</span> __call__(self, *, response, query=<span class="s">""</span>, **kw):
+        <span class="k">if</span> self._model_config:
+            score = self._llm_judge(query, response)
+            <span class="k">if</span> score <span class="k">is not</span> None:
+                <span class="k">return</span> {<span class="s">"conciseness"</span>: score}
+        <span class="c"># degrades to word-count so CI never hangs</span>
+        <span class="k">return</span> {<span class="s">"conciseness"</span>: self._heuristic(response)}</pre>
+        <p class="muted">Your metric — "did it cite a policy number?", "is the tone on-brand?" — lives right here.</p>
+      </div>
+      <div class="stack">
+        <h3>Thresholds — centralised, env-overridable <span class="muted">(thresholds.py)</span></h3>
+<pre><span class="k">def</span> check_threshold(evaluator, score, threshold, warn=0.5):
+    <span class="k">if</span>   score &gt;= threshold:          status = <span class="s">PASS</span>
+    <span class="k">elif</span> score &gt;= threshold - warn:   status = <span class="s">WARN</span>
+    <span class="k">else</span>:                            status = <span class="s">FAIL</span>  <span class="c"># blocks build</span></pre>
+        <div class="card soft"><p>Thresholds are configurable via <code>CE_THRESHOLD_*</code> env vars — never hardcoded in the runner.</p></div>
+      </div>
+    </div>
+    <div class="notes"><b>Call the custom evaluator out honestly:</b> it's an LLM-as-judge at temperature 0; heuristic fallback keeps CI deterministic-ish and non-blocking on judge failure.</div>
+  </section>
+
+  <!-- 10 · ACT 4b MONEY SHOT -->
+  <section class="slide" data-act="Act 4b" data-time="24:00–30:00">
+    <div class="slide-head"><span class="act-badge" style="background:var(--cp-danger)">Act 4b · The money shot</span><span class="time-badge">a regression gets BLOCKED</span></div>
+    <h2>Green proves nothing. Does the gate <em>stop</em> a bad change?</h2>
+    <div class="cols wide-left">
+      <figure class="shot">
+        <video src="fallback/recordings/make_demo_regression.mp4" controls preload="metadata"></video>
+        <figcaption>Recording · <code>make demo-regression</code> — staged, no Azure calls</figcaption>
+        <div class="media-hint">fallback/recordings/make_demo_regression.mp4</div>
+      </figure>
+      <div class="stack">
+        <table class="data">
+          <thead><tr><th>Evaluator</th><th>Base</th><th>Now</th><th>Δ</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>groundedness</td><td class="num">4.70</td><td class="num">3.20</td><td class="num bad">-1.5</td><td class="bad">🔴 REGRESSION</td></tr>
+            <tr><td>coherence</td><td class="num">4.00</td><td class="num">3.90</td><td class="num warn">-0.1</td><td class="warn">🟡 SLIGHT</td></tr>
+            <tr><td>relevance</td><td class="num">4.60</td><td class="num">4.60</td><td class="num">0.0</td><td class="muted">⚪ STABLE</td></tr>
+          </tbody>
+        </table>
+        <div class="card bad-l"><p><span class="bad">Groundedness — REGRESSION. Exit code 1.</span> In CI this is the difference between shipping a hallucinating assistant and stopping it at the door.</p></div>
+<pre><span class="k">if</span> delta &lt; -regression_threshold:   <span class="c"># default 0.3</span>
+    status, has_regression = <span class="s">"REGRESSION"</span>, True   <span class="c"># exit 1</span></pre>
+      </div>
+    </div>
+    <div class="notes"><b>Never skip this.</b> "Nobody had to notice. The pipeline noticed." Then note it's wired in .github/workflows/evaluate.yml after every deploy. Fallback: fallback/regression_comparison_blocked.md.</div>
+  </section>
+
+  <!-- 11 · ACT 4c SCORES -->
+  <section class="slide" data-act="Act 4c" data-time="30:00–32:00">
+    <div class="slide-head"><span class="act-badge">Act 4c</span><span class="time-badge">Where scores go</span></div>
+    <h2>The bridge from <span class="ok">CE</span> into <span class="cm">CM</span></h2>
+    <div class="cols">
+      <div class="stack">
+        <h3>score_tracker.py</h3>
+<pre>metric_name = <span class="s">f"ce.score.{evaluator}"</span>
+histogram = meter.create_histogram(name=metric_name, unit=<span class="s">"score"</span>)
+histogram.record(score, attributes={<span class="s">"evaluator"</span>: evaluator, ...})
+<span class="c"># → App Insights customMetrics → CM dashboard</span></pre>
+      </div>
+      <div class="stack">
+        <div class="card cm-l"><p>Every eval run also pushes scores to Application Insights as <strong>custom metrics</strong>.</p></div>
+        <blockquote class="cue">"That's the bridge from CE into CM — hold that thought, we'll see it on a dashboard in a few minutes."</blockquote>
+      </div>
+    </div>
+    <div class="notes">Short beat (2 min). Transition: "Quality is one axis. Safety is another. For that we get adversarial."</div>
+  </section>
+
+  <!-- 12 · ACT 5 RED TEAM -->
+  <section class="slide" data-act="Act 5" data-time="32:00–39:00">
+    <div class="slide-head"><span class="act-badge">Act 5</span><span class="time-badge">Red teaming — adversarial CE</span></div>
+    <h2>Evaluation with an attacker's mindset</h2>
+    <div class="cols">
+      <div class="stack">
+        <figure class="shot">
+          <video src="fallback/recordings/make_redteam.mp4" controls preload="metadata"></video>
+          <figcaption>Recording · <code>make redteam</code> — two phases</figcaption>
+          <div class="media-hint">fallback/recordings/make_redteam.mp4</div>
+        </figure>
+        <figure class="shot">
+          <img src="fallback/redteam_results_pwsh.png" alt="Red team results table" />
+          <figcaption>Screenshot · custom-probe report by category</figcaption>
+        </figure>
+      </div>
+      <div class="stack">
+        <div class="card accent-l"><h3>Phase 1 — SDK scan</h3><p>Azure AI Evaluation <strong>Red Team SDK</strong>: service-generated objectives across 4 <em>risk categories</em> (Violence, Hate/Unfairness, Sexual, Self-Harm) × strategies (Baseline, Jailbreak).</p></div>
+        <div class="card accent-l"><h3>Phase 2 — custom probes <span class="muted">(the table)</span></h3>
+          <table class="data">
+            <tbody>
+              <tr><td>Prompt Injection</td><td class="num">3/3</td><td class="ok">PASS</td></tr>
+              <tr><td>Jailbreak</td><td class="num">2/2</td><td class="ok">PASS</td></tr>
+              <tr><td>PII Extraction</td><td class="num">2/2</td><td class="ok">PASS</td></tr>
+              <tr><td>Harmful / Social Eng. / Misinfo</td><td class="num">3/3</td><td class="ok">PASS</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:.9rem"><strong>Honest caveat:</strong> the custom-probe detector is a refusal/keyword heuristic — a gate signal. Phase 1 does the heavier service-side lifting; Phase 1 is non-blocking if it errors.</p>
+      </div>
+    </div>
+    <div class="notes"><b>Be precise:</b> the two phases use different taxonomies. Each probe checks whether the safety agent refused; critical-severity failures fail the workflow. redteam.yml runs weekly + on demand. Fallback: fallback/redteam_report.md.</div>
+  </section>
+
+  <!-- 13 · ACT 6 MONITORING -->
+  <section class="slide" data-act="Act 6" data-time="39:00–45:00">
+    <div class="slide-head"><span class="act-badge" style="background:var(--cp-link)">Act 6</span><span class="time-badge">Continuous Monitoring — production loop</span></div>
+    <h2>Every span into Application Insights</h2>
+    <div class="cols wide-left">
+      <figure class="shot">
+        <video src="fallback/recordings/azure_walkthrough.mp4" controls preload="metadata"></video>
+        <figcaption>Recording · Azure Portal → App Insights → CE/CM workbook</figcaption>
+        <div class="media-hint">fallback/recordings/azure_walkthrough.mp4</div>
+      </figure>
+      <div class="stack">
+        <div class="card cm-l"><h3>1 · Evaluation Trends</h3><p>Groundedness, coherence, relevance, safety — <em>over time</em>. You can see the day a regression landed.</p></div>
+        <div class="card cm-l"><h3>2 · Agent Health</h3><p>Latency P50/P95/P99 per agent, error rate, token usage <span class="muted">(= your cost signal)</span>.</p></div>
+        <div class="card cm-l"><h3>3 · Alerts &amp; Regressions</h3><p>Score drop, latency spike, safety-flag rate — <strong>deployed as IaC</strong> in the same Bicep (<code>alerts.bicep</code>).</p></div>
+      </div>
+    </div>
+    <blockquote class="cue">"A monitoring anomaly → an investigation → a <strong>new row in the golden dataset</strong> → which the next PR is evaluated against. CE feeds CM; CM feeds CE. Safer every iteration — automatically."</blockquote>
+    <div class="notes">Alerts aren't clicked into a portal and forgotten — they're code, reviewed in PRs. Fallback if portal slow: src/continuous_monitoring/dashboards/ce_cm_dashboard.json.</div>
+  </section>
+
+  <!-- 14a · ACT 7 EVIDENCE (GitHub) -->
+  <section class="slide" data-act="Act 7" data-time="quality next to the diff">
+    <div class="slide-head"><span class="act-badge">Act 7</span><span class="time-badge">Eval scores gate every PR</span></div>
+    <h2>The CE gate runs <span class="ok">green</span> in CI — on every PR</h2>
+    <div class="cols">
+      <figure class="shot">
+        <img class="shotimg" src="presentation_assets/gh_ci_run.png" alt="Green CI run: Lint/Tests + Lightweight CE Evaluation" />
+        <figcaption>A PR's run — <strong>Lint/Tests</strong> + <strong>Lightweight CE Evaluation</strong>, both green. The CE gate sits right in the pipeline.</figcaption>
+        <div class="media-hint">github.com/…/actions · CI #10</div>
+      </figure>
+      <figure class="shot">
+        <img class="shotimg" src="presentation_assets/gh_actions_list.png" alt="CI workflow run history — mostly green" />
+        <figcaption>CI history — the gate on <em>every</em> PR. Green when quality holds; red when it doesn't.</figcaption>
+        <div class="media-hint">Actions → CI workflow</div>
+      </figure>
+    </div>
+    <p class="muted">"On a real PR, the eval scores show up right in the Checks tab — reviewers see quality <strong>next to the diff.</strong>"</p>
+    <div class="notes">Live alternative: github.com/sohamda/azure-ai-redteam-eval/actions. Note the two early red CI runs at the bottom of the history — honest proof the gate actually fails when it should.</div>
+  </section>
+
+  <!-- 14 · ACT 7 WIRING + TAKEAWAY -->
+  <section class="slide" data-act="Act 7" data-time="45:00–50:00">
+    <div class="slide-head"><span class="act-badge">Act 7</span><span class="time-badge">CI/CD wiring + takeaway</span></div>
+    <h2>Four workflows tie it together</h2>
+    <div class="cols">
+      <div class="stack">
+        <table class="data">
+          <thead><tr><th>Workflow</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">ci.yml</td><td>PR gate: lint + tests + lightweight eval</td></tr>
+            <tr><td class="mono">deploy.yml</td><td>Ships the Bicep</td></tr>
+            <tr><td class="mono">evaluate.yml</td><td>Full eval + regression check post-deploy</td></tr>
+            <tr><td class="mono">redteam.yml</td><td>Adversarial probes, weekly</td></tr>
+          </tbody>
+        </table>
+        <p class="muted">On a real PR, eval scores show up right in the Checks tab — reviewers see quality next to the diff.</p>
+      </div>
+      <div class="stack">
+        <div class="card accent-l">
+          <h3>The takeaway</h3>
+          <p style="font-size:clamp(1.1rem,1.8vw,1.5rem)"><span class="accent">Deploy. Evaluate. Monitor. Improve.</span> The loop never stops.</p>
+          <p style="margin-top:.5rem">The tooling already exists — <code>azure-ai-evaluation</code>, OpenTelemetry, App Insights, GitHub Actions.</p>
+        </div>
+        <p>"Fork it, break it, add your own evaluator. That's the assignment. Thank you."</p>
+        <p class="repo-url">github.com/sohamda/azure-ai-redteam-eval</p>
+      </div>
+    </div>
+    <div class="notes"><b>Must hit this slide.</b> Screenshots on the previous slide already prove the green run + CE gate in CI, so you don't need live github.com. Land the takeaway slowly.</div>
+  </section>
+
+  <!-- 15 · Q&A -->
+  <section class="slide" data-act="Q&amp;A" data-time="50:00+">
+    <div class="slide-head"><span class="act-badge">Q&amp;A</span><span class="time-badge">rehearse these</span></div>
+    <h2>Anticipated questions</h2>
+    <div class="cols">
+      <div class="stack">
+        <div class="card"><p><strong>Why not just Foundry's built-in online eval?</strong> Use it — great for in-prod sampling. This is the CI-gating, portable angle. Complementary.</p></div>
+        <div class="card"><p><strong>What does CE cost?</strong> It's LLM calls. PR eval = a few rows × a few evaluators = cents. Keep PR datasets small; run full set post-deploy/nightly; watch the token panel.</p></div>
+        <div class="card"><p><strong>How is "blocked" decided in custom probes?</strong> Honestly — a refusal/keyword heuristic. A reasonable gate signal; Phase 1 (SDK) does the rigorous part. Prod should score refusals with a model too.</p></div>
+      </div>
+      <div class="stack">
+        <div class="card"><p><strong>Aren't LLM-judge scores non-deterministic?</strong> Somewhat — judge runs at temp 0, thresholds have a WARN band, regression compares to a baseline with delta tolerance. You detect <em>movement</em>, not absolute truth.</p></div>
+        <div class="card"><p><strong>How do you pick thresholds / build the golden dataset?</strong> Baseline current prod, set thresholds just under, tighten over time. Every production surprise becomes a row.</p></div>
+        <div class="card"><p><strong>vs. LangSmith / Braintrust / Ragas?</strong> Same discipline, different toolbox. The pattern is tool-agnostic; this is the Azure-native path.</p></div>
+      </div>
+    </div>
+    <div class="notes">Offer to drop the repo URL / a QR in chat.</div>
+  </section>
+
+  <!-- 17 · THANKS -->
+  <section class="slide title-slide" data-act="Close" data-time="Thank you">
+    <div style="display:flex; gap:2.8rem; align-items:center; flex-wrap:wrap; width:100%;">
+      <div class="stack" style="flex:1; min-width:280px; gap:1.2rem;">
+        <div class="eyebrow">Thank you</div>
+        <h1>Deploy. Evaluate.<br />Monitor. Improve.</h1>
+        <p class="lead">The loop never stops. Fork it, break it, add your own evaluator.</p>
+        <p class="repo-url">github.com/sohamda/azure-ai-redteam-eval</p>
+        <div class="badges">
+          <span class="pill g">CE</span><span class="pill a">Red Team</span><span class="pill b">CM</span>
+        </div>
+      </div>
+      <div class="qr">
+        <img src="presentation_assets/repo_qr.png" alt="QR code to the GitHub repo" />
+        <span>Scan to open the repo</span>
+      </div>
+    </div>
+    <div class="notes">Leave this slide up for Q&amp;A — the QR gives the audience the repo instantly.</div>
+  </section>
+
+</div>
+
+<div id="progress"></div>
+<div id="actlabel"></div>
+<div id="hud">
+  <button id="prev" title="Previous (←)">‹</button>
+  <span id="counter">1 / 17</span>
+  <button id="next" title="Next (→)">›</button>
+  <button id="btn-notes" title="Speaker notes (N)">N</button>
+  <button id="btn-theme" title="Light/Dark (T)">◐</button>
+  <button id="btn-full" title="Fullscreen (F)">⛶</button>
+  <button id="btn-help" title="Shortcuts (?)">?</button>
+</div>
+
+<div id="overview">
+  <h2>Overview — jump to a slide</h2>
+  <div class="ov-grid" id="ov-grid"></div>
+</div>
+
+<div id="help">
+  <div class="box">
+    <h2 style="margin-bottom:1rem">Keyboard shortcuts</h2>
+    <table>
+      <tr><td><kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd></td><td>Next slide</td></tr>
+      <tr><td><kbd>←</kbd> <kbd>PgUp</kbd></td><td>Previous slide</td></tr>
+      <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>First / last slide</td></tr>
+      <tr><td><kbd>O</kbd></td><td>Overview grid</td></tr>
+      <tr><td><kbd>N</kbd></td><td>Toggle speaker notes</td></tr>
+      <tr><td><kbd>T</kbd></td><td>Toggle light / dark</td></tr>
+      <tr><td><kbd>F</kbd></td><td>Fullscreen (whole deck)</td></tr>
+      <tr><td><kbd>V</kbd> · dbl-click</td><td>Enlarge current video (its ⛶ = OS fullscreen)</td></tr>
+      <tr><td><kbd>?</kbd> / <kbd>Esc</kbd></td><td>This help / close</td></tr>
+    </table>
+    <p class="muted" style="margin-top:1rem;font-size:.85rem">Videos are local files under <code>fallback/recordings/</code>. Keep this HTML in the repo root so the paths resolve.</p>
+  </div>
+</div>
+
+<div id="lightbox">
+  <button class="lb-close" title="Close (Esc)">✕</button>
+  <video id="lightbox-video" controls playsinline preload="metadata"></video>
+  <div class="lb-hint">Esc or click outside to close · use the video's own ⛶ button for OS fullscreen</div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let idx = 0;
+
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const actlabel = document.getElementById('actlabel');
+
+  function pauseAllVideos() {
+    document.querySelectorAll('video').forEach(v => { try { v.pause(); } catch(e){} });
+  }
+  function show(n) {
+    idx = Math.max(0, Math.min(total - 1, n));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    counter.textContent = (idx + 1) + ' / ' + total;
+    progress.style.width = ((idx) / (total - 1) * 100) + '%';
+    const s = slides[idx];
+    actlabel.textContent = (s.dataset.act || '') + (s.dataset.time ? ' · ' + s.dataset.time : '');
+    pauseAllVideos();
+    slides[idx].scrollTop = 0;
+  }
+  function next() { if (idx < total - 1) show(idx + 1); }
+  function prev() { if (idx > 0) show(idx - 1); }
+
+  document.getElementById('next').onclick = next;
+  document.getElementById('prev').onclick = prev;
+  document.getElementById('btn-notes').onclick = () => document.body.classList.toggle('show-notes');
+  document.getElementById('btn-theme').onclick = toggleTheme;
+  document.getElementById('btn-full').onclick = toggleFull;
+  document.getElementById('btn-help').onclick = () => document.getElementById('help').classList.toggle('show');
+
+  function toggleTheme() {
+    const el = document.documentElement;
+    el.setAttribute('data-theme', el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+  function toggleFull() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+
+  // Overview grid
+  const ovGrid = document.getElementById('ov-grid');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    const btn = document.createElement('button');
+    btn.className = 'ov-card';
+    btn.innerHTML = '<div class="num">' + (s.dataset.act || '') + '</div>' +
+                    '<div class="t">' + (h ? h.textContent : ('Slide ' + (i+1))) + '</div>' +
+                    '<div class="m">' + (s.dataset.time || '') + '</div>';
+    btn.onclick = () => { show(i); document.getElementById('overview').classList.remove('show'); };
+    ovGrid.appendChild(btn);
+  });
+
+  // --- video enlarge / lightbox ---
+  const lightbox = document.getElementById('lightbox');
+  const lightboxVideo = document.getElementById('lightbox-video');
+  function openLightbox(v) {
+    const src = v.currentSrc || v.getAttribute('src');
+    if (!src) return;
+    try { v.pause(); } catch (e) {}
+    lightboxVideo.src = src;
+    lightbox.classList.add('show');
+    lightboxVideo.currentTime = 0;
+    lightboxVideo.play().catch(() => {});
+  }
+  function closeLightbox() {
+    lightbox.classList.remove('show');
+    try { lightboxVideo.pause(); } catch (e) {}
+    lightboxVideo.removeAttribute('src');
+    lightboxVideo.load();
+  }
+  function enlargeCurrentVideo() {
+    const v = slides[idx].querySelector('video');
+    if (v) openLightbox(v);
+  }
+  document.querySelector('#lightbox .lb-close').onclick = closeLightbox;
+  lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+  document.querySelectorAll('.slide video').forEach(v => {
+    const wrap = document.createElement('div');
+    wrap.className = 'video-wrap';
+    v.parentNode.insertBefore(wrap, v);
+    wrap.appendChild(v);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'enlarge-btn';
+    btn.textContent = '⛶ Enlarge';
+    btn.title = 'Enlarge (press V, or double-click the video)';
+    btn.addEventListener('click', () => openLightbox(v));
+    wrap.appendChild(btn);
+    v.addEventListener('dblclick', () => openLightbox(v));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const help = document.getElementById('help');
+    const ov = document.getElementById('overview');
+    if (lightbox.classList.contains('show')) {
+      if (e.key === 'Escape' || e.key === 'v' || e.key === 'V') { e.preventDefault(); closeLightbox(); }
+      return;
+    }
+    if (e.key === 'Escape') { help.classList.remove('show'); ov.classList.remove('show'); return; }
+    if (e.key === '?' ) { help.classList.toggle('show'); return; }
+    if (e.key === 'v' || e.key === 'V') { e.preventDefault(); enlargeCurrentVideo(); return; }
+    if (e.key === 'o' || e.key === 'O') { ov.classList.toggle('show'); return; }
+    if (e.key === 'n' || e.key === 'N') { document.body.classList.toggle('show-notes'); return; }
+    if (e.key === 't' || e.key === 'T') { toggleTheme(); return; }
+    if (e.key === 'f' || e.key === 'F') { toggleFull(); return; }
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+  });
+
+  show(0);
+</script>
+</body>
+</html>
