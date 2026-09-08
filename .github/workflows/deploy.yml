@@ -77,10 +77,7 @@ jobs:
 
       - name: Deploy application code
         run: |
-          # Oryx looks for requirements.txt at the zip root
-          cp requirements-app.txt requirements.txt
-
-          # Package app code (exclude non-essential files)
+          # Package app code (exclude non-essential files); Oryx reads requirements.txt at the zip root
           zip -r app.zip src/ requirements.txt startup.sh pyproject.toml \
             -x "src/**/__pycache__/*" "src/**/*.pyc" "*.egg-info/*"
 
