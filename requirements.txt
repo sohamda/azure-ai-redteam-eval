@@ -10,6 +10,9 @@ agent-framework-core>=1.0.0rc2
 azure-identity>=1.25.3
 # Pinned exactly: metric key names differ between versions, which breaks the baseline diff.
 azure-ai-evaluation==1.18.5
+# openai is transitive (via azure-ai-evaluation / agent-framework) but pinned: the 2.x -> 3.x
+# rename (gpt_groundedness -> groundedness_score) must match between local and CI.
+openai==3.6.0
 
 # API
 fastapi>=0.141.1

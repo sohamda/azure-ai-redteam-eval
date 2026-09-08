@@ -13,6 +13,8 @@ dependencies = [
     "azure-identity>=1.25.3",
     # Pinned exactly: metric key names differ between versions, which breaks the baseline diff.
     "azure-ai-evaluation[redteam]==1.18.5",
+    # openai is transitive but pinned: the 2.x -> 3.x metric-key rename must match local and CI.
+    "openai==3.6.0",
     # API
     "fastapi>=0.141.1",
     "uvicorn[standard]>=0.52.4",
