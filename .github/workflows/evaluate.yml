@@ -71,6 +71,8 @@ jobs:
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          # Judge model for evaluators — must be gpt-4o-class (gpt-5.1 rejects max_tokens)
+          AZURE_OPENAI_EVAL_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EVAL_DEPLOYMENT }}
           AZURE_AI_FOUNDRY_PROJECT: ${{ secrets.AZURE_AI_FOUNDRY_PROJECT }}
           AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
           APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
