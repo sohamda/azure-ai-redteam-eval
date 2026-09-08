@@ -10,27 +10,30 @@ dependencies = [
     "agent-framework-azure-ai>=1.0.0rc2",
     "agent-framework-core>=1.0.0rc2",
     # Azure SDKs
-    "azure-identity>=1.19.0",
+    "azure-identity>=1.25.3",
     "azure-ai-evaluation[redteam]>=1.0.0",
     # API
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.32.0",
-    # Observability
-    "opentelemetry-api>=1.28.0",
-    "opentelemetry-sdk>=1.28.0",
-    "azure-monitor-opentelemetry>=1.6.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
+    "httpx>=0.27.0",
+    # Observability — pinned together; azure-monitor 1.8.6 requires opentelemetry-sdk 1.39.x
+    "opentelemetry-api==1.39.0",
+    "opentelemetry-sdk==1.39.0",
+    "azure-monitor-opentelemetry==1.8.6",
+    "opentelemetry-instrumentation-fastapi==0.60b0",
+    "opentelemetry-instrumentation-httpx>=0.49b0",
     # Config
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.7.0",
-    "python-dotenv>=1.0.0",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.3",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.24.0",
-    "ruff>=0.8.0",
-    "pyright>=1.1.390",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.5",
+    "pyright>=1.1.411",
     "httpx>=0.27.0",
 ]
 
