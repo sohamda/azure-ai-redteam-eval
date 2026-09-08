@@ -8,7 +8,8 @@ agent-framework-core>=1.0.0rc2
 
 # Azure SDKs
 azure-identity>=1.25.3
-azure-ai-evaluation>=1.0.0
+# Pinned exactly: metric key names differ between versions, which breaks the baseline diff.
+azure-ai-evaluation==1.18.5
 
 # API
 fastapi>=0.141.1
