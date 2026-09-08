@@ -17,7 +17,11 @@ from azure.ai.evaluation.red_team import AttackStrategy, RedTeam, RiskCategory
 from azure.identity import DefaultAzureCredential
 
 from src.config import configure_logging, get_settings
-from src.redteam.attack_strategies import get_attack_categories, run_adversarial_probes
+from src.redteam.attack_strategies import (
+    TargetUnreachableError,
+    get_attack_categories,
+    run_adversarial_probes,
+)
 from src.redteam.report import generate_report
 
 logger = logging.getLogger(__name__)
@@ -25,6 +29,9 @@ logger = logging.getLogger(__name__)
 ADVERSARIAL_DATASET = Path(__file__).parent.parent / "continuous_evaluation" / "datasets" / "adversarial_prompts.jsonl"
 REPORT_OUTPUT = Path("redteam_report.json")
 REPORT_MD_OUTPUT = Path("redteam_report.md")
+# Dedicated dir for the SDK scan artifacts so they don't clobber the CE
+# outputs (evaluation_results.json / results.json) written at the repo root.
+SDK_SCAN_OUTPUT_DIR = Path("redteam_scan_output")
 
 # Risk categories to test
 RISK_CATEGORIES: list[RiskCategory] = [
@@ -42,29 +49,38 @@ ATTACK_STRATEGIES: list[AttackStrategy | list[AttackStrategy]] = [
 
 
 def _build_target_callback(endpoint: str) -> Any:
-    """Build a callback function that the RedTeam SDK uses as a target.
+    """Build the target callback used by the RedTeam SDK.
 
-    The callback receives a query string and returns a response string.
-    It calls the local FastAPI /chat endpoint.
+    The azure-ai-evaluation ``_CallbackChatTarget`` invokes this with keyword
+    args ``messages`` (chat history), ``stream``, ``session_state`` and
+    ``context``, and expects a dict shaped like
+    ``{"messages": [{"role": "assistant", "content": <text>}]}`` in return.
 
     Args:
         endpoint: The chat API endpoint URL.
 
     Returns:
-        An async callback function.
+        An async callback compatible with the RedTeam SDK.
     """
     import httpx
 
-    async def target_callback(query: str) -> str:
-        """Forward query to the agent and return the response."""
+    async def target_callback(
+        messages: list[dict[str, Any]],
+        stream: bool = False,
+        session_state: Any = None,
+        context: Any = None,
+    ) -> dict[str, Any]:
+        """Forward the latest user turn to the agent and wrap the reply."""
+        query = messages[-1]["content"] if messages else ""
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
                 resp = await client.post(endpoint, json={"query": query, "context": ""})
                 resp.raise_for_status()
-                return str(resp.json().get("response", ""))
+                answer = str(resp.json().get("response", ""))
             except Exception as e:
                 logger.warning("Target callback error: %s", e)
-                return f"Error: {e}"
+                answer = f"Error: {e}"
+        return {"messages": [{"role": "assistant", "content": answer}]}
 
     return target_callback
 
@@ -111,11 +127,12 @@ async def run_redteam_sdk(endpoint: str = "http://localhost:8000/chat") -> dict[
     ]
     logger.info("Running red-team scan with strategies: %s", strategy_names)
 
+    SDK_SCAN_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     result = await red_team.scan(
         target=target,
         scan_name="ce-redteam-scan",
         attack_strategies=ATTACK_STRATEGIES,
-        output_path=str(REPORT_OUTPUT.parent),
+        output_path=str(SDK_SCAN_OUTPUT_DIR),
         skip_upload=True,
     )
 
@@ -184,6 +201,32 @@ def _resolve_target_url() -> str:
     return "http://localhost:8000/chat"
 
 
+async def _check_target_health(chat_endpoint: str) -> None:
+    """Verify the agent service is reachable before probing.
+
+    Args:
+        chat_endpoint: The chat API endpoint URL (e.g. .../chat).
+
+    Raises:
+        TargetUnreachableError: If the health endpoint cannot be reached.
+    """
+    from urllib.parse import urlsplit, urlunsplit
+
+    import httpx
+
+    parts = urlsplit(chat_endpoint)
+    health_url = urlunsplit((parts.scheme, parts.netloc, "/health", "", ""))
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        try:
+            resp = await client.get(health_url)
+            resp.raise_for_status()
+        except Exception as e:
+            raise TargetUnreachableError(
+                f"Agents are not running — target endpoint {chat_endpoint} is unreachable "
+                f"({health_url} failed: {e}). Start the service with `python -m src.app` and retry."
+            ) from e
+
+
 async def run_redteam() -> None:
     """Run the full red-team evaluation — SDK scan + custom probes.
 
@@ -204,14 +247,24 @@ async def run_redteam() -> None:
     logger.info("Target endpoint: %s", endpoint)
     has_critical = False
 
+    # Preflight: abort immediately if the agent service is not running.
+    try:
+        await _check_target_health(endpoint)
+    except TargetUnreachableError as e:
+        logger.error("%s", e)
+        sys.exit(2)
+
     # --- Phase 1: Azure AI Evaluation RedTeam SDK scan ---
     logger.info("--- Phase 1: RedTeam SDK Scan ---")
     try:
         sdk_result = await run_redteam_sdk(endpoint=endpoint)
         logger.info("RedTeam SDK scan completed.")
-        # Save SDK result
+        # Save the structured scan result (RedTeamResult.to_json emits scan_result).
         sdk_output = Path("redteam_sdk_result.json")
-        sdk_output.write_text(json.dumps(str(sdk_result), indent=2), encoding="utf-8")
+        to_json = getattr(sdk_result, "to_json", None)
+        sdk_json = str(to_json()) if callable(to_json) else ""
+        payload = sdk_json if sdk_json else json.dumps({"scan_result": None}, indent=2)
+        sdk_output.write_text(payload, encoding="utf-8")
         logger.info("SDK scan result saved to %s", sdk_output)
     except Exception as e:
         logger.warning("RedTeam SDK scan failed (non-blocking): %s", e)
@@ -219,7 +272,11 @@ async def run_redteam() -> None:
 
     # --- Phase 2: Custom adversarial probes ---
     logger.info("--- Phase 2: Custom Adversarial Probes ---")
-    custom_results = await run_redteam_custom(endpoint=endpoint)
+    try:
+        custom_results = await run_redteam_custom(endpoint=endpoint)
+    except TargetUnreachableError as e:
+        logger.error("%s", e)
+        sys.exit(2)
 
     # Generate reports from custom probes
     report_json, report_md, has_critical = generate_report(custom_results)
