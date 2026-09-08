@@ -1,0 +1,41 @@
+flowchart LR
+    subgraph CICD["CI/CD Pipeline"]
+        A[GitHub Actions] -->|ci.yml| A1[PR Eval Gate]
+        A -->|deploy.yml| B[Bicep Deploy]
+        A -->|evaluate.yml| C[Full CE Run]
+        A -->|redteam.yml| D[Red Team Probes]
+    end
+    subgraph AZ["Azure Infrastructure"]
+        B --> E[Azure OpenAI]
+        B --> F[App Service]
+        B --> G[AI Foundry Hub + Project]
+        B --> H[App Insights + Log Analytics]
+        B --> I[Key Vault]
+        B --> I2[Alert Rules]
+    end
+    subgraph APP["Application Under Evaluation"]
+        F --> J[Orchestrator]
+        J --> K[Planner]
+        J --> L[Retrieval]
+        J --> M[Safety]
+    end
+    subgraph CE["Continuous Evaluation"]
+        A1 -->|small dataset| G
+        C -->|golden dataset| G
+        G -->|scores| C
+        C -->|regression check| A
+        D -->|adversarial prompts| F
+        D -->|report| A
+    end
+    subgraph CM["Continuous Monitoring"]
+        J -.->|telemetry| H
+        C -.->|eval scores as metrics| H
+        H --> N[Azure Dashboard / Workbook]
+        H --> I2
+        I2 -->|alert on drift| A
+    end
+    style C fill:#16a34a,color:#fff
+    style A1 fill:#16a34a,color:#fff
+    style D fill:#f59e0b,color:#111
+    style H fill:#0078d4,color:#fff
+    style N fill:#0078d4,color:#fff
