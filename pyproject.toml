@@ -3,7 +3,7 @@ name = "azure-ai-redteam-eval"
 version = "0.1.0"
 description = "Continuous Evaluation & Monitoring for AI Applications — demo repo for a 15-minute talk"
 readme = "README.md"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = [
     # Multi-Agent Framework
