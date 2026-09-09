@@ -256,4 +256,4 @@ flowchart LR
 
 ## License
 
-MIT
+Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use is not licensed under these terms. See LICENSE for permitted purposes, including specified organizational uses. Third-party components remain subject to their own licenses. This change does not revoke licenses previously granted for earlier versions.
