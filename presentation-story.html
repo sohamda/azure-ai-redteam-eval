@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engineering Continuous Evaluation &amp; Monitoring | Technical Session</title>
+<script>
+(() => {
+  const param = new URLSearchParams(window.location.search).get("scoutTheme");
+  const theme = param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", theme);
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+* { box-sizing: border-box; letter-spacing: 0; }
+body { margin: 0; font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; color: var(--cp-text); background: var(--cp-surface); }
+button, select { font: inherit; }
+button, a, select { touch-action: manipulation; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid var(--cp-link); outline-offset: 4px; }
+a { color: var(--cp-link); text-underline-offset: 4px; }
+[hidden] { display: none !important; }
+.slide { min-height: calc(100dvh - 64px); padding: 40px 6% 28px; display: flex; flex-direction: column; gap: 24px; background: linear-gradient(115deg, var(--cp-surface) 68%, var(--cp-surface-soft)); }
+.eyebrow, .label { font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--cp-text-muted); }
+.eyebrow { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--cp-border); padding-bottom: 16px; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 76px; line-height: 1.02; max-width: 1050px; font-weight: 650; }
+h2 { font-size: 48px; line-height: 1.1; font-weight: 650; max-width: 1150px; }
+h3 { font-size: 26px; line-height: 1.2; }
+p, li { font-size: 23px; line-height: 1.45; }
+.lead { font-size: 29px; max-width: 980px; }
+.muted, .caption { color: var(--cp-text-muted); }
+.caption { font-size: 16px; line-height: 1.45; }
+.accent { color: var(--cp-accent); }
+.good { color: var(--cp-success); }
+.bad { color: var(--cp-danger); }
+.blue { color: var(--cp-link); }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.stack { display: grid; gap: 20px; }
+.quote { border-left: 5px solid var(--cp-accent); padding: 12px 0 12px 24px; font-size: 29px; line-height: 1.4; }
+.checks { display: flex; flex-wrap: wrap; gap: 24px; font-size: 20px; font-weight: 600; }
+.checks span { border-bottom: 3px solid var(--cp-success); padding-bottom: 8px; }
+.answer { padding: 24px; background: var(--cp-surface-soft); border: 1px solid var(--cp-border); border-radius: 8px; }
+.answer p { margin-top: 12px; }
+.question { margin-top: auto; font-size: 28px; font-weight: 600; padding-top: 20px; }
+.rail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 24px 0; border-block: 1px solid var(--cp-border); }
+.rail article { border-top: 4px solid var(--cp-accent); padding-top: 20px; }
+.rail article:nth-child(3) { border-color: var(--cp-link); }
+.rail article:nth-child(4) { border-color: var(--cp-success); }
+.rail p { font-size: 21px; margin-top: 12px; }
+.step { display: block; color: var(--cp-text-muted); font: 16px Consolas, monospace; margin-bottom: 12px; }
+.metric { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; }
+.metric strong { font-size: 100px; line-height: 1; font-weight: 600; }
+.metric span { font-size: 46px; color: var(--cp-text-muted); }
+.metric-label { font-size: 18px; text-transform: uppercase; }
+.verdict { display: inline-block; background: var(--cp-accent-soft); padding: 12px 20px; font-size: 22px; font-weight: 700; border-left: 5px solid var(--cp-danger); }
+.bars { display: grid; gap: 22px; padding-top: 12px; }
+.bar-row { display: grid; grid-template-columns: 140px 1fr 50px; align-items: center; gap: 16px; font-size: 20px; }
+.bar-track { height: 22px; background: var(--cp-surface-soft); }
+.bar { height: 100%; background: var(--cp-success); }
+.bar.current { background: var(--cp-danger); }
+.demo { margin-top: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--cp-border); padding-top: 18px; }
+code { font-family: Consolas, "Courier New", Courier, monospace; overflow-wrap: anywhere; }
+pre { margin: 0; padding: 20px; border: 1px solid var(--cp-border); background: var(--cp-surface-soft); border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; font: 18px/1.5 Consolas, "Courier New", monospace; }
+.technical h2 { font-size: 42px; }
+.technical p, .technical li { font-size: 21px; }
+.technical .caption { font-size: 16px; }
+.technical table { font-size: 20px; }
+.technical th, .technical td { padding: 13px 10px; }
+.contract { border-left: 4px solid var(--cp-link); padding: 12px 18px; background: var(--cp-surface-soft); }
+.demo code { font-size: 21px; }
+.demo .label { color: var(--cp-accent); }
+.action { border: 1px solid var(--cp-border-strong); background: var(--cp-surface); color: var(--cp-text); padding: 10px 16px; border-radius: 8px; font-size: 16px; text-decoration: none; }
+.action:hover, .icon:hover { background: var(--cp-highlight); }
+.demo .backup { margin-left: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 22px; }
+th { font-size: 15px; text-transform: uppercase; color: var(--cp-text-muted); }
+th, td { padding: 18px 12px; text-align: left; border-bottom: 1px solid var(--cp-border); }
+.flow { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 28px 0; font-size: 25px; }
+.flow strong { padding: 16px 0; border-bottom: 3px solid var(--cp-border-strong); }
+.flow .arrow { color: var(--cp-accent); }
+.statement { font-size: 42px; line-height: 1.2; max-width: 1000px; padding: 24px 0; }
+.number-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 24px; }
+.number-list li { display: grid; grid-template-columns: 54px 1fr; gap: 16px; }
+.number-list b { color: var(--cp-accent); font-size: 32px; }
+.repo { font-size: 24px; overflow-wrap: anywhere; }
+.note { display: none; }
+#toolbar { height: 64px; position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 8px 24px; background: var(--cp-panel-strong); border-top: 1px solid var(--cp-border); }
+.icon { width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid var(--cp-border); border-radius: 8px; color: var(--cp-text); background: var(--cp-surface); font-size: 23px; }
+.icon:disabled { opacity: .4; cursor: default; }
+#slide-select { max-width: 390px; min-width: 0; width: 100%; background: var(--cp-surface); color: var(--cp-text); border: 1px solid var(--cp-border); padding: 10px; border-radius: 8px; font-size: 14px; }
+#counter { font: 14px Consolas, monospace; white-space: nowrap; }
+.toolbar-space { flex: 1; }
+dialog { width: min(1100px, 94vw); max-height: 92dvh; padding: 24px; border: 1px solid var(--cp-border); border-radius: 8px; background: var(--cp-surface); color: var(--cp-text); box-shadow: var(--cp-shadow); }
+dialog::backdrop { background: var(--cp-overlay); }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+dialog h2 { font-size: 28px; }
+dialog p, dialog li { font-size: 18px; }
+video { width: 100%; max-height: 66dvh; background: var(--cp-surface-soft); display: block; }
+#recording-caption { margin-top: 12px; }
+#notes-content { display: grid; gap: 18px; }
+.note-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (prefers-reduced-motion: no-preference) { .slide:not([hidden]) h1, .slide:not([hidden]) h2 { animation: arrive .25s ease-out; } @keyframes arrive { from { transform: translateY(8px); } to { transform: none; } } }
+@media (max-width: 900px) { .slide { padding: 28px 5%; } h1 { font-size: 54px; } h2 { font-size: 38px; } .split { gap: 24px; } .rail { grid-template-columns: 1fr 1fr; } .metric strong { font-size: 76px; } p, li { font-size: 21px; } }
+@media (max-width: 600px) { h1 { font-size: 42px; } h2 { font-size: 32px; } .split, .rail, .note-grid { grid-template-columns: 1fr; } .lead, .quote, .question { font-size: 24px; } .statement { font-size: 30px; } .slide { gap: 24px; } .eyebrow { font-size: 12px; } .metric strong { font-size: 68px; } .metric span { font-size: 30px; } .bar-row { grid-template-columns: 96px 1fr 38px; gap: 8px; font-size: 17px; } th, td { padding: 12px 6px; font-size: 16px; } #toolbar { padding: 8px; gap: 6px; } #slide-select { width: 70px; } .toolbar-space { display: none; } #counter { display: none; } .demo .backup { margin-left: 0; } }
+@media (max-width: 600px) {
+  .technical h2 { font-size: 32px; }
+  .split > *, .stack { min-width: 0; }
+  pre { max-width: 100%; white-space: pre; overflow-x: auto; }
+  #toolbar { position: static; }
+}
+@media print { .slide[hidden], .slide { display: flex !important; min-height: 95vh; break-after: page; background: var(--cp-surface); } #toolbar, dialog, .demo button { display: none !important; } }
+</style>
+</head>
+<body>
+<main id="deck" aria-label="Continuous evaluation and monitoring presentation">
+<section class="slide" data-title="Engineering CE and CM" data-time="00:00-01:00">
+  <div class="eyebrow"><span>Techorama / Continuous Evaluation &amp; Monitoring</span><span>The decision</span></div>
+  <h1>Engineering<br><span class="accent">CE &amp; CM</span></h1>
+  <div class="split">
+    <div class="stack"><p class="lead">Continuous Evaluation &amp; Monitoring<br>for AI Applications</p><div class="checks"><span>Python</span><span>Agent Framework</span><span>OpenTelemetry</span></div></div>
+    <div class="answer"><span class="label">The engineering question</span><p>Which executable checks justify a release, and which production signals tell us to investigate?</p></div>
+  </div>
+  <p class="question">Contracts. Failure semantics. Traces. Release control.</p>
+  <div class="note"><p><b>Open:</b> This is an implementation walkthrough for engineers. We will trace dataset rows through evaluators, inspect the exact conditions that fail a process, exercise a live red-team target, and follow telemetry into KQL and alert criteria.</p><p><b>Scope:</b> Distinguish implemented behavior from production recommendations. The application, evaluators, and workflows are unchanged. Live demos are primary; recordings are backups.</p><p><b>Transition:</b> Start with a deterministic failing regression check. Move by 01:00.</p></div>
+</section>
+<section class="slide" hidden data-title="The gate says no" data-time="01:00-04:00" data-video="make_demo_regression.mp4">
+  <div class="eyebrow"><span>01 / The first piece of evidence</span><span>Continuous Evaluation</span></div>
+  <h2>The answer still sounds good.<br><span class="bad">Groundedness does not.</span></h2>
+  <div class="split">
+    <div class="stack"><p class="metric-label">Groundedness / 1-5 scale</p><div class="metric"><strong>4.7</strong><span>&rarr;</span><strong class="bad">3.2</strong></div><div class="verdict">REGRESSION &nbsp; / &nbsp; exit code 1</div><p class="caption">Staged scores from the regression fixture. Real regression-check logic; no Azure calls.</p></div>
+    <div class="stack"><div class="bars"><div class="bar-row"><span>Baseline</span><div class="bar-track"><div class="bar" style="width:94%"></div></div><b>4.7</b></div><div class="bar-row"><span>Candidate</span><div class="bar-track"><div class="bar current" style="width:64%"></div></div><b>3.2</b></div></div><p>A quality regression can be a build failure, not a customer discovery.</p><a href="fallback/regression_comparison_blocked.md" target="_blank" rel="noopener">Inspect the staged comparison</a></div>
+  </div>
+  <div class="demo"><span class="label">Live / local</span><code>make demo-regression</code><button class="action backup" data-backup>Play backup recording</button></div>
+  <div class="note"><p><b>Do:</b> Run make demo-regression in the prepared terminal. It returns exit 1 intentionally and does not call Azure. Show the delta and process result.</p><p><b>State:</b> These are staged scores exercising the real comparison logic, not measured output from editing a prompt. The fixture proves failure propagation; it does not validate the judge.</p><p><b>Questions to resolve:</b> What response was evaluated? Which judge and baseline? Are all required metrics present? Where does exit 1 block a release?</p><p><b>Backup:</b> Recording if local execution is unavailable. Move by 04:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Architecture: three execution paths" data-time="04:00-06:00">
+  <div class="eyebrow"><span>Architecture / Data and execution boundaries</span><span>Implemented</span></div>
+  <h2>Three paths. Different evidence.</h2>
+  <div class="stack"><div class="flow"><strong>Stored-response CE</strong><span class="arrow">&rarr;</span><span>JSONL &rarr; SDK judges &rarr; scores &rarr; gate</span></div><div class="flow"><strong>Live-target red team</strong><span class="arrow">&rarr;</span><span>Probe &rarr; POST /chat &rarr; response &rarr; verdict</span></div><div class="flow"><strong>Application telemetry</strong><span class="arrow">&rarr;</span><span>ASGI + chat spans &rarr; Azure Monitor &rarr; KQL</span></div></div>
+  <p class="contract">Evaluation scores also flow to <code>customMetrics</code>. That does not make the CE runner a live-agent test.</p>
+  <div class="note"><p><b>Trace each path:</b> CE reads stored responses and asks judges to score them. Red teaming actually sends HTTP requests to the app. Telemetry is emitted by the application and separately by evaluation jobs.</p><p><b>Explain the boundary:</b> A green CE run says something about the stored answers and current judges. The live app may execute a different code revision or different inputs. Closing that gap requires candidate response capture, not just scheduling the evaluator more often.</p><p><b>Move by 06:00.</b></p></div>
+</section>
+<section class="slide technical" hidden data-title="Agent workflow and payload" data-time="06:00-09:00" data-video="make_agent_demo.mp4">
+  <div class="eyebrow"><span>Application / Executor chain</span><span>Implemented</span></div>
+  <h2>Follow the payload, not just the agent names.</h2>
+  <div class="split"><div class="stack"><pre>workflow = (
+    WorkflowBuilder(start_executor=planner)
+    .add_chain([planner, retrieval, safety])
+    .build()
+)
+payload = AgentPayload(query=query, context=context)
+result = await workflow.run(message=payload)</pre><p><code>plan &rarr; grounded_response &rarr; final_response</code></p><p class="caption">Each Executor handler mutates the payload and forwards it. The orchestrator extracts the final output.</p></div><div class="stack"><h3>Boundaries to inspect</h3><p>Planner produces a plan; the chain itself is fixed, not dynamic routing.</p><p>Retrieval composes query, plan, and optional context into a model prompt. No search call in that handler.</p><p>Import failures select a direct OpenAI fallback with different execution and guardrail behavior.</p></div></div>
+  <div class="demo"><span class="label">Live</span><a class="action" href="http://localhost:8000" target="_blank" rel="noopener">Open local assistant</a><code>make agent-demo</code><button class="action backup" data-backup>Play backup recording</button></div>
+  <div class="note"><p><b>Demo:</b> Use the warm local app and ask for Azure AI deployment practices. The API accepts query and optional context; it returns response and agents_involved. Open the orchestrator and one Executor handler.</p><p><b>Trace:</b> AgentPayload carries query, context, plan, grounded_response, final_response, and agents_involved. Planner and retrieval handlers mutate it and call ctx.send_message. The orchestrator retrieves the final workflow output.</p><p><b>Important:</b> Retrieval here is a grounding-oriented model prompt, not a vector-search integration. The import-time fallback performs a different direct SDK path. Agent labels alone do not prove which path ran; inspect startup logs.</p><p><b>Backup:</b> Existing app recording if Azure is unavailable. Move by 09:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Evaluation boundary: stored responses" data-time="09:00-12:00">
+  <div class="eyebrow"><span>CE / Input contract</span><span>Implemented</span></div>
+  <h2>What exactly are we evaluating?</h2>
+  <div class="split"><div class="stack"><h3>Golden JSONL / 10 rows</h3><pre>{
+  "query": "How does continuous evaluation
+            differ from traditional testing?",
+  "context": "Traditional testing validates
+              code correctness. ...",
+  "response": "Continuous evaluation focuses
+               on AI output quality ...",
+  "ground_truth": "Continuous evaluation
+                   differs ..."
+}</pre><p class="caption">Excerpt from row 2, shortened for display. Ground truth is available; not every registered evaluator consumes it.</p></div><div class="stack"><h3>The runner grades stored answers</h3><pre>evaluate(
+    data=str(DATASET_PATH),
+    evaluators=evaluators,
+    evaluation_name="ce-full-evaluation",
+)</pre><p>No <code>target</code> callback generates new agent responses in this call.</p><p class="contract">A prompt-only change is not exercised by re-scoring unchanged dataset responses.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/continuous_evaluation/datasets/eval_golden.jsonl" target="_blank" rel="noopener">Golden dataset</a><a href="src/continuous_evaluation/run_evaluation.py" target="_blank" rel="noopener">Full runner</a></div>
+  <div class="note"><p><b>Explain:</b> Start at the evaluate call, not the README. The golden file already contains response text. This run measures those responses with the configured judges. It does not invoke the newly deployed application.</p><p><b>Walk row 2:</b> Query is the task, context is evidence, response is the object under evaluation, ground_truth is a reference answer. A column existing does not imply every evaluator uses it. Groundedness against context differs from agreement with a reference answer.</p><p><b>Design extension, not implemented:</b> For an end-to-end release test, invoke a fixed candidate with each query, preserve its response and retrieved context, then judge that snapshot. Record the candidate revision. The app demo and this stored-response evaluation are separate execution paths.</p><p><b>Transition:</b> Follow those rows through the SDK and the score adapter. Move by 12:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="SDK results to policy inputs" data-time="12:00-15:00" data-video="make_evaluate.mp4">
+  <div class="eyebrow"><span>CE / Evaluation pipeline</span><span>Implemented</span></div>
+  <h2>JSONL &rarr; judges &rarr; metric adapter &rarr; gate</h2>
+  <div class="split"><div class="stack"><h3>Seven registered evaluators</h3><table><tbody><tr><td>Quality / model config</td><td>Groundedness, coherence,<br>relevance, fluency</td></tr><tr><td>Custom / model config</td><td>Conciseness</td></tr><tr><td>Safety / project + credential</td><td>Content safety,<br>protected material</td></tr></tbody></table><p>Judge deployment: <code>eval_deployment</code>, falling back to the app deployment.</p></div><div class="stack"><h3>Score adapter / source excerpt</h3><pre>for key, value in metrics_dict.items():
+    parts = key.split(".")
+    evaluator_name = parts[-1] if parts else key
+    if isinstance(value, (int, float)):
+        scores[evaluator_name] = float(value)</pre><p><code>groundedness.groundedness</code><br>&rarr; <code>groundedness</code></p><p class="caption">Namespace removal is lossy. Metric names, direction, and scales are part of the gate contract; a numeric value alone is insufficient.</p></div></div>
+  <div class="demo"><span class="label">Live</span><code>make evaluate</code><a href="src/continuous_evaluation/metrics.py" target="_blank" rel="noopener">Score adapter</a><button class="action backup" data-backup>Play backup recording</button></div>
+  <div class="note"><p><b>Do:</b> Start a real evaluation or show its prepared completed output. Follow get_all_evaluators, evaluate, summarize_scores, export_eval_scores, save results, check_all_thresholds, and the exit code. Use the recording if Azure is unavailable.</p><p><b>Explain:</b> The SDK provides aggregate metrics; this adapter shortens their names and keeps numeric values. It does not preserve a semantic registry of direction, scale, or required coverage. Two names with the same suffix can overwrite. Unknown result format produces an empty dictionary.</p><p><b>Artifact:</b> The runner writes scores plus raw_results converted with str(results), not a structured row-level evidence artifact. Recommend a structured, versioned artifact for production without claiming it exists here.</p><p><b>Transition:</b> Inspect the custom evaluator as an actual callable contract. Move by 15:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Custom evaluator: rubric to callable" data-time="15:00-18:00">
+  <div class="eyebrow"><span>CE / Custom evaluator contract</span><span>Implemented</span></div>
+  <h2>An evaluator is code with failure modes.</h2>
+  <div class="split"><div class="stack"><h3>ConcisenessEvaluator / excerpt</h3><pre>def __call__(self, *, response: str,
+             query: str = "", **kwargs):
+    if self._model_config:
+        score = self._llm_judge(query, response)
+        if score is not None:
+            return {"conciseness": score}
+    return {
+        "conciseness": self._heuristic(response)
+    }</pre><p class="caption">Abbreviated control flow. The source invokes _llm_judge with keyword arguments.</p></div><div class="stack"><h3>Rubric &rarr; JSON &rarr; score</h3><p>Judge request: temperature 0, JSON object, 120 output tokens. Parse score; clamp to 1&ndash;5.</p><p>Rubric requires completeness as well as brevity. A short incomplete answer should not score well.</p><p class="contract">On judge failure: word count &le; 50 returns 5.0, even for an empty response.</p><p class="caption">The prompt asks for a reason, but the callable returns only the score. Evaluation mode and reason are not preserved in that return value.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/continuous_evaluation/evaluators.py" target="_blank" rel="noopener">Rubric, callable, fallback</a><a href="tests/unit/test_evaluators.py" target="_blank" rel="noopener">Evaluator tests</a></div>
+  <div class="note"><p><b>Walk:</b> Keyword inputs match dataset columns; extra columns are accepted through kwargs. The judge prompt explicitly says short but incomplete is not concise. The response is parsed as JSON and the score clamped to the intended range.</p><p><b>Failure semantics:</b> Exceptions return None; the callable switches to word count. That is a different metric under the same name. An empty response contains zero words and gets 5.0 from the heuristic. This demonstrates availability of a score, not equivalence of methods.</p><p><b>Production design:</b> Preserve score, reason, evaluator version, judge deployment, evaluation mode, and error status. Choose explicitly whether judge unavailability blocks a release or yields an inconclusive result. Calibrate both modes separately if you retain both.</p><p><b>Move by 18:00.</b> Next: how does a score become a failing process?</p></div>
+</section>
+<section class="slide technical" hidden data-title="Thresholds: exact failure semantics" data-time="18:00-21:00">
+  <div class="eyebrow"><span>CE / Absolute quality gate</span><span>Implemented</span></div>
+  <h2>The exact failure policy</h2>
+  <div class="split"><div class="stack"><pre>if score &gt;= threshold:
+    status = ThresholdStatus.PASS
+elif score &gt;= threshold - warn_margin:
+    status = ThresholdStatus.WARN
+else:
+    status = ThresholdStatus.FAIL</pre><table><thead><tr><th>Example: threshold 4.0</th><th>Outcome</th></tr></thead><tbody><tr><td>4.0 or above</td><td class="good">PASS</td></tr><tr><td>3.5 to below 4.0</td><td>WARN / non-blocking</td></tr><tr><td>Below 3.5</td><td class="bad">FAIL / exit 1</td></tr></tbody></table></div><div class="stack"><h3>What is actually checked?</h3><p>Known names: groundedness, coherence, relevance, fluency, safety.</p><p><code>gpt_</code> is stripped before matching. Unknown metrics are skipped.</p><p>Conciseness has no absolute threshold entry. Safety submetrics need an explicit mapping.</p><p class="contract">An empty set of threshold results has no failures. Missing evidence needs its own check.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/continuous_evaluation/thresholds.py" target="_blank" rel="noopener">Threshold policy</a><a href="tests/unit/test_thresholds.py" target="_blank" rel="noopener">Threshold unit tests</a></div>
+  <div class="note"><p><b>Trace:</b> check_all_thresholds iterates the scores that arrived, removes gpt_, and checks only names in get_thresholds. It does not require every expected metric to be present. any_failures only looks for FAIL.</p><p><b>Work the examples:</b> With threshold 4.0 and warning margin 0.5, 3.7 warns but does not block; 3.4 fails. Display-table emoji logic is separate from this policy.</p><p><b>Technical lesson:</b> Evaluator registration, aggregation, and gate coverage are three distinct contracts. Running content safety does not establish that each returned risk submetric is governed by the generic safety threshold.</p><p><b>Recommended extension:</b> Assert required canonical metrics, finite values, sample coverage, and the correct direction before applying thresholds. These are design recommendations, not code changes. Move by 21:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Regression: baseline and metric coverage" data-time="21:00-23:00">
+  <div class="eyebrow"><span>CE / Relative quality gate</span><span>Implemented</span></div>
+  <h2>What does &ldquo;no regression&rdquo; mean?</h2>
+  <div class="split"><div class="stack"><pre>for evaluator in sorted(current.keys()):
+    base_score = baseline.get(evaluator, 0.0)
+    curr_score = current[evaluator]
+    delta = curr_score - base_score
+
+    if delta &lt; -regression_threshold:
+        status = "REGRESSION"
+        has_regression = True</pre><p>Default tolerance: 0.3 points.<br>Opening fixture: 3.2 &minus; 4.7 = &minus;1.5.</p></div><div class="stack"><h3>Read the edge cases</h3><p>Only current keys are compared. Missing current metrics are skipped.</p><p>A newly appearing metric gets baseline 0.0.</p><p>No baseline file? Copy current results into it; first run passes without a comparison.</p><p class="contract">All deltas are treated as higher-is-better. Normalize risk rates and score scales before using a common policy.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/continuous_evaluation/regression_check.py" target="_blank" rel="noopener">Comparison logic</a><a href="tests/unit/test_regression_check.py" target="_blank" rel="noopener">Regression tests</a></div>
+  <div class="note"><p><b>Point:</b> A comparison has assumptions about identity, coverage, direction, and scale. The code uses a strict less-than test. Do not confuse 0.3 points on a five-point score with 30 percent or a statistical significance test.</p><p><b>Ask:</b> What if groundedness disappears after an SDK upgrade? Since iteration uses current keys, it is skipped. This accommodates name drift but does not verify required metric coverage.</p><p><b>Baseline:</b> Bootstrap is convenient locally; production needs an approved, versioned baseline tied to dataset, judge, rubric, and candidate. The workflow does not automatically persist an approved baseline update back to git.</p><p><b>Move by 23:00.</b></p></div>
+</section>
+<section class="slide technical" hidden data-title="Calibration and experiment design" data-time="23:00-25:00">
+  <div class="eyebrow"><span>CE / Production design</span><span>Recommended / not implemented</span></div>
+  <h2>A mean score can hide your worst slice.</h2>
+  <div class="split"><div class="stack"><h3>Illustrative five-row scores</h3><table><thead><tr><th>Slice</th><th>Baseline</th><th>Candidate</th></tr></thead><tbody><tr><td>Common / four cases</td><td>4, 4, 4, 4</td><td>5, 5, 5, 5</td></tr><tr><td>Critical / one case</td><td>5</td><td class="bad">1</td></tr><tr><td>Overall mean</td><td>4.2</td><td>4.2</td></tr></tbody></table><p>The mean is stable. The critical case regressed by four points.</p></div><div class="stack"><h3>Compare controlled experiments</h3><p>Freeze dataset, rubric, judge version, generation settings, and retrieval snapshot.</p><p>Compare paired cases; report per-slice results, coverage, and run-to-run variation.</p><p>Calibrate disagreement against human labels; define critical-case policy separately.</p><p class="caption">A tolerance band is not a confidence interval. Ten demo rows are not a production coverage claim.</p></div></div>
+  <div class="note"><p><b>Work the arithmetic:</b> Baseline total 21; candidate total 21. Both average 4.2, yet the critical case moves from 5 to 1. This is an intentionally constructed example, not recorded evaluation output.</p><p><b>Engineering extension:</b> Pair baseline and candidate on the same cases, separate generation variance from judge variance, repeat near a release boundary, and retain sample counts and per-case deltas. Where appropriate use paired uncertainty estimates, but do not claim the current checker calculates them.</p><p><b>Cost model:</b> Start with case count times applicable judges times repeats, then account for prompt/context tokens and pricing per model. This is why PR and full suites have different budgets. Move by 25:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="CI: evaluation versus release control" data-time="25:00-28:00">
+  <div class="eyebrow"><span>CI/CD / Where the result is enforced</span><span>Implemented + production extension</span></div>
+  <h2>A failed process only gates its dependents.</h2>
+  <div class="split"><div class="stack"><h3>PR versus full evaluation</h3><table><thead><tr><th></th><th>PR</th><th>Full</th></tr></thead><tbody><tr><td>Stored rows</td><td>5</td><td>10</td></tr><tr><td>Quality judges</td><td>4</td><td>4</td></tr><tr><td>Conciseness</td><td>Heuristic</td><td>Judge + fallback</td></tr><tr><td>Safety evaluators</td><td>No</td><td>2</td></tr><tr><td>Regression step</td><td>No</td><td>Yes</td></tr></tbody></table></div><div class="stack"><h3>Actual deployment dependency</h3><pre>trigger-evaluation:
+  needs: deploy
+  uses: ./.github/workflows/evaluate.yml
+  secrets: inherit</pre><p>Deploy finishes before full evaluation. No rollback or production-promotion step is wired here.</p><p class="contract">Production extension: evaluate an isolated candidate, require the result, then promote that same artifact.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href=".github/workflows/ci.yml" target="_blank" rel="noopener">PR workflow</a><a href=".github/workflows/deploy.yml" target="_blank" rel="noopener">Deploy workflow</a><a href=".github/workflows/evaluate.yml" target="_blank" rel="noopener">Full evaluation</a></div>
+  <div class="note"><p><b>Trace:</b> PR evaluation depends on lint-and-test. It uses five stored rows and calls get_custom_evaluators without model_config, so conciseness is heuristic. Full evaluation supplies model_config and registers two safety evaluators. These are intentionally different suites, not interchangeable evidence.</p><p><b>Control flow:</b> Evaluate is a reusable workflow invoked after deploy. Full evaluation and regression are successive steps; a failed full evaluation prevents the regression step from running normally. Summary and artifact upload use always().</p><p><b>Enforcement:</b> Configure required checks through branch protection or rulesets. A production promotion gate should depend on a tested candidate and preserve artifact identity. This repo has no such promotion step and no automatic rollback.</p><p><b>Move by 28:00.</b></p></div>
+</section>
+<section class="slide technical" hidden data-title="Red team: live-target callback" data-time="28:00-31:00" data-video="make_redteam.mp4">
+  <div class="eyebrow"><span>Adversarial CE / Target adapter</span><span>Implemented</span></div>
+  <h2>The target adapter defines the attack surface.</h2>
+  <div class="split"><div class="stack"><h3>SDK callback / abridged</h3><pre>async def target_callback(messages, stream=False,
+                          session_state=None,
+                          context=None):
+    query = messages[-1]["content"]
+    resp = await client.post(endpoint, json={
+        "query": query, "context": ""
+    })
+    return {"messages": [{
+        "role": "assistant", "content": answer
+    }]}</pre><p class="caption">Forwarding contract only; error handling and response extraction omitted here.</p></div><div class="stack"><h3>Two distinct experiments</h3><p>SDK: four risk categories, five objectives each, Baseline and Jailbreak strategies.</p><p>Custom: ten curated probes, category and severity carried into the report.</p><p class="contract">Only the last message is forwarded; context is empty. This does not test multi-turn state or a retrieved-document injection channel.</p></div></div>
+  <div class="demo"><span class="label">Live</span><code>make redteam</code><a href="redteam_report.md" target="_blank" rel="noopener">Inspect probe report</a><button class="action backup" data-backup>Play backup recording</button></div>
+  <div class="note"><p><b>Do:</b> Show _build_target_callback and the selected strategy list. Explain that this path really invokes POST /chat, unlike stored-response CE. Start the scan or use a prepared run; do not wait silently for service-generated objectives.</p><p><b>Scope:</b> The callback accepts the SDK's messages, stream, session_state, and context contract but forwards only the last message content, with an empty application context. Baseline and Jailbreak are configured as single-turn strategies. Do not claim multi-turn or retrieved-document injection coverage.</p><p><b>Reports:</b> Keep the SDK scan artifact distinct from redteam_report.md, which is built from custom probes. Four categories times five objectives times two strategies describes the planned matrix, not proof all attempts completed.</p><p><b>Backup:</b> Existing red-team recording. Move by 31:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Red team: verdict and failure semantics" data-time="31:00-34:00">
+  <div class="eyebrow"><span>Adversarial CE / Harness integrity</span><span>Implemented</span></div>
+  <h2>Unavailable is not the same as safe.</h2>
+  <div class="split"><div class="stack"><table><thead><tr><th>Condition</th><th>Current behavior</th></tr></thead><tbody><tr><td>Health or custom-probe error</td><td>Abort / exit 2</td></tr><tr><td>SDK phase exception</td><td>Log; continue</td></tr><tr><td>SDK target-call exception</td><td>Return error as text</td></tr><tr><td>Custom high/critical failure</td><td>Report / exit 1</td></tr><tr><td>No high/critical failure</td><td>Normal completion</td></tr></tbody></table></div><div class="stack"><h3>Custom refusal detector</h3><p>Normalize apostrophes; recognize <code>[REDACTED]</code>; match refusal phrases.</p><p><code>[SAFE]</code> alone is not a blocked signal.</p><p>Classification uses the full response; the stored probe response is truncated to 500 characters.</p><p class="contract">SDK findings are saved but do not drive <code>has_critical</code>. The final blocking verdict comes from the custom report.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/redteam/run_redteam.py" target="_blank" rel="noopener">Runner</a><a href="src/redteam/attack_strategies.py" target="_blank" rel="noopener">Detector</a><a href="src/redteam/report.py" target="_blank" rel="noopener">Verdict</a></div>
+  <div class="note"><p><b>Explain:</b> A refusal classifier can false-pass a response that refuses and then discloses content, or false-fail a valid refusal phrased differently. The current detector is transparent and inexpensive, not a proof of security.</p><p><b>Operational distinction:</b> Custom probe errors invalidate the run with exit 2. The SDK callback instead converts call exceptions into assistant error text, and SDK phase exceptions are non-blocking. These differing semantics matter when interpreting scan success.</p><p><b>Verdict:</b> generate_report finds the maximum severity among failed probes. High or critical failures set has_critical; medium-only failures can leave the overall status passing. The SDK result is saved but not used in that decision.</p><p><b>Production extension:</b> Represent pass, fail, and inconclusive separately. Gate scan completeness, target health, and severity policy independently. Move by 34:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Telemetry: span ownership and timing" data-time="34:00-37:00">
+  <div class="eyebrow"><span>CM / Instrumentation contract</span><span>Implemented</span></div>
+  <h2>Trace boundaries determine what you can explain.</h2>
+  <div class="split"><div class="stack"><h3>Explicit application spans</h3><pre>POST /chat                    [SERVER]
+  chat_request                [INTERNAL]
+    query.length, query.preview
+    response.length, agents.involved
+    duration_ms, status
+
+httpx dependencies: optional instrumentor
+Agent/LLM spans: verify SDK configuration</pre><p>Initialize telemetry in FastAPI lifespan. Flush on shutdown and at CLI evaluation exit.</p></div><div class="stack"><h3>Inspect the producer</h3><p>Raw ASGI middleware preserves the request execution context. Span attributes use <code>set_attribute()</code>.</p><p><code>agent.request.duration</code> records total chat duration once per participating agent label.</p><p class="contract">It is not each agent's exclusive latency. The <code>trace_agent</code> decorator exists but is not attached to these handlers.</p><p class="caption">Prompt previews can contain sensitive data. Treat collection, retention, and access as design decisions.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/app.py" target="_blank" rel="noopener">ASGI spans + metric producer</a><a href="src/continuous_monitoring/telemetry.py" target="_blank" rel="noopener">Providers + instruments</a></div>
+  <div class="note"><p><b>Walk:</b> Lifespan calls setup_telemetry after worker startup. The raw ASGI middleware creates a SERVER span; chat creates the nested application span. Azure Monitor configuration enables exporters and attempts optional httpx instrumentation.</p><p><b>Do not overclaim:</b> Agent Framework and model-call spans depend on effective SDK instrumentation. The local trace_agent helper is not applied to the handlers. A list of agent labels is not a trace tree.</p><p><b>Metric semantics:</b> The duration is calculated around the entire run_orchestrator call and recorded for every listed agent. A per-agent grouping of that metric is still whole-request timing. Token usage has an instrument definition, but this chat path does not update it.</p><p><b>Privacy:</b> query.preview stores up to 80 characters; truncation is not redaction. Do not enable sensitive prompt/completion capture by default in a production recommendation. Move by 37:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="CE metrics: provenance and aggregation" data-time="37:00-39:00">
+  <div class="eyebrow"><span>CE &rarr; CM / Metric contract</span><span>Implemented + production extension</span></div>
+  <h2>Export the score. Preserve its meaning.</h2>
+  <div class="split"><div class="stack"><pre>histogram = meter.create_histogram(
+    name=f"ce.score.{evaluator}",
+    unit="score",
+)
+histogram.record(score, attributes={
+    "evaluator": evaluator,
+    "evaluation_name": evaluation_name,
+    "run_id": run_id,
+    "timestamp": timestamp,
+})</pre><p class="caption">Excerpt from export_eval_scores. Meter is created lazily after telemetry setup; export is force-flushed.</p></div><div class="stack"><h3>What a chart can establish</h3><p>These are aggregate evaluation scores over time, not per-request production judgments.</p><p>Current runners omit <code>run_id</code>, so its default is empty. No automatic link to a request trace.</p><p class="contract">Keep high-cardinality provenance in an evaluation artifact: candidate SHA, dataset hash, judge/rubric versions, case IDs, and mode.</p><p class="caption">The exported average mixes every numeric score. Do not treat mixed scales or duplicate aliases as a calibrated quality index.</p></div></div>
+  <div class="demo"><span class="label">Source</span><a href="src/continuous_monitoring/eval_metrics_exporter.py" target="_blank" rel="noopener">Metric exporter</a></div>
+  <div class="note"><p><b>Trace:</b> A score becomes a histogram observation named ce.score plus the evaluator. Explain the attributes, lazy meter construction, and force-flush before a short-lived CLI exits.</p><p><b>Limits:</b> Calling force_flush is not proof a chart ingested the point. The full and PR runners do not pass run_id, and these evaluation metrics are emitted independently of individual chat traces.</p><p><b>Recommended design:</b> Use bounded dimensions such as environment and evaluation suite on metrics. Store detailed run/case identity and reasons in durable structured artifacts or events with controlled retention. Avoid unbounded timestamp or case-ID metric dimensions.</p><p><b>Move by 39:00.</b></p></div>
+</section>
+<section class="slide technical" hidden data-title="KQL: latency and trace correlation" data-time="39:00-42:00" data-video="azure_walkthrough.mp4">
+  <div class="eyebrow"><span>CM / Evidence in Application Insights</span><span>Workbook query + diagnostic pattern</span></div>
+  <h2>Query events before trusting the chart.</h2>
+  <div class="split"><div class="stack"><h3>Request latency / existing workbook</h3><pre>requests
+| where url endswith '/chat' or name has 'chat'
+| summarize
+    p50=percentile(duration, 50),
+    p95=percentile(duration, 95),
+    p99=percentile(duration, 99)
+  by bin(timestamp, 5m)
+| render timechart</pre><p class="caption">Uses the workbook's selected time range. These are percentiles of observed request records.</p></div><div class="stack"><h3>Follow one operation / suggested query</h3><pre>union withsource=table_name
+    requests, dependencies, traces, exceptions
+| where timestamp &gt; ago(1h)
+| where operation_Id == "&lt;operation_Id&gt;"
+| project timestamp, table_name, name,
+          message, duration, operation_ParentId
+| order by timestamp asc</pre><p class="caption">Replace the placeholder with an observed request's operation_Id. Application Insights table names; workspace schemas differ.</p></div></div>
+  <div class="demo"><span class="label">Live</span><span>Prepared Application Insights tab</span><button class="action backup" data-backup>Play backup recording</button></div>
+  <div class="note"><p><b>Prepare:</b> Select an existing chat request with recent ingested telemetry. Set the workbook time range. The left query is an existing workbook query; the right query is a proposed diagnostic pattern and has not been run against Azure for this presentation revision.</p><p><b>Do:</b> Identify request latency, pick an operation_Id, then inspect related records. Use operation_ParentId and span IDs to explain parent-child relationships; temporal proximity alone is not causality.</p><p><b>Aggregation:</b> Percentiles here describe retained request records, not an unbiased guarantee about all traffic under sampling. Histograms exported as aggregate points do not automatically allow reconstruction of raw request percentiles.</p><p><b>Offline:</b> Use the portal recording for navigation and walk the KQL on the slide. Do not invent a production incident or assert that every optional table contains data. Move by 42:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Alerts: metric, window, aggregation, action" data-time="42:00-44:00">
+  <div class="eyebrow"><span>CM / Alert contract</span><span>Implemented Bicep criteria</span></div>
+  <h2>Read the condition, not the alert title.</h2>
+  <table><thead><tr><th>Metric</th><th>Aggregation / condition</th><th>Window / cadence</th></tr></thead><tbody><tr><td><code>ce.score.groundedness</code></td><td>Average &lt; 4</td><td>15 min / 5 min</td></tr><tr><td><code>ce.score.safety</code></td><td>Average &lt; 5</td><td>5 min / 1 min</td></tr><tr><td><code>agent.request.duration</code></td><td>Maximum &gt; 5000 ms</td><td>15 min / 5 min</td></tr><tr><td><code>agent.error.count</code></td><td>Total &gt; 10</td><td>5 min / 5 min</td></tr></tbody></table>
+  <div class="split"><p><b>Semantics:</b> Maximum is not P99. Error count is not error rate. Confirm the exact safety metric is emitted.</p><p><b>Delivery:</b> No action-group ID means no notification action. Sparse eval runs also need a freshness check.</p></div>
+  <div class="demo"><span class="label">Source</span><a href="infra/modules/alerts.bicep" target="_blank" rel="noopener">Alert criteria</a><span class="caption">No alert or infrastructure changes made.</span></div>
+  <div class="note"><p><b>Read:</b> Show metricName, operator, threshold, timeAggregation, windowSize, evaluationFrequency, and actions in the Bicep. The table reproduces actual conditions, not the comments.</p><p><b>Compare policies:</b> A groundedness score of 3.7 is WARN under the illustrative CI threshold 4.0 with a 0.5 warning band, but can breach this alert's average-below-4 condition. Different policies may be intentional, but must be understood.</p><p><b>Coverage:</b> skipMetricValidation allows deployment before a metric exists; it does not prove a producer emits it. A scheduled evaluation and a fifteen-minute alert window do not provide continuous quality coverage. Add freshness and missing-data policy in a production design.</p><p><b>Response:</b> Empty actionGroupId produces an empty actions list. autoMitigate resolves alert state; it does not remediate or roll back the application. Move by 44:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Close the loop with a reproducible case" data-time="44:00-47:00">
+  <div class="eyebrow"><span>CM &rarr; CE / Production extension</span><span>Recommended / not implemented</span></div>
+  <h2>Turn an incident into a reproducible experiment.</h2>
+  <div class="split"><div class="stack"><h3>Case artifact / proposed schema</h3><pre>case_id, incident_reference
+query, redacted_context
+reference_answer, expected_behavior
+candidate_response, candidate_sha
+dataset_version, rubric_version
+judge_deployment, evaluation_mode
+reviewer, risk_slice, retention_policy</pre><p class="caption">A design sketch, not the existing JSONL schema. Keep sensitive source data separately controlled.</p></div><div class="stack"><h3>The feedback loop</h3><p>1. Capture and minimize evidence.</p><p>2. Have a domain owner validate the label.</p><p>3. Reproduce on the old candidate.</p><p>4. Generate and judge the fixed candidate.</p><p>5. Retain the case and release evidence.</p><p class="contract">Re-scoring the same stored answer cannot prove that an agent fix works.</p></div></div>
+  <div class="note"><p><b>Example:</b> Suppose a request produced an unsupported guarantee. Preserve the relevant evidence, not an entire raw conversation. A reviewer defines the required qualification and verifies the reference source.</p><p><b>Reproduction:</b> Run the old and fixed candidate against the same case and grounding snapshot. Capture fresh responses before judging. Confirm the fix and check the surrounding slice, not just the one incident.</p><p><b>Governance:</b> Record identity and provenance in an artifact rather than unbounded metric dimensions. Exclude secrets and PII; set retention and access. Hold back unseen cases to reduce overfitting to the regression suite.</p><p><b>Scope:</b> This is a proposed operating model, not an automatic pipeline implemented by this repo. Move by 47:00.</p></div>
+</section>
+<section class="slide technical" hidden data-title="Production engineering checklist" data-time="47:00-50:00">
+  <div class="eyebrow"><span>12 / Take it back to your team</span><span>Continuous Evaluation &amp; Monitoring</span></div>
+  <h2>Three contracts to take into production.</h2>
+  <ol class="number-list"><li><b>01</b><span><strong>Measurement contract</strong><br>Candidate identity, row coverage, rubric, judge version, scale, and direction.</span></li><li><b>02</b><span><strong>Decision contract</strong><br>Required metrics, failure/inconclusive policy, approved baseline, release dependency.</span></li><li><b>03</b><span><strong>Observability contract</strong><br>Span boundaries, metric semantics, alert freshness, response owner, reviewed test case.</span></li></ol>
+  <p class="question">CE produces evidence. CM tests your assumptions.</p>
+  <a class="repo" href="https://github.com/sohamda/azure-ai-redteam-eval" target="_blank" rel="noopener">github.com/sohamda/azure-ai-redteam-eval</a>
+  <div class="note"><p><b>Synthesize:</b> We started with exit 1, then examined everything it depends on: the response snapshot, evaluator contract, score adapter, threshold policy, baseline, and workflow dependency. In production we traced what is actually emitted, how it is queried, and which condition triggers action.</p><p><b>Close:</b> The portable part is not a dashboard or SDK call. It is these three contracts. Choose one release boundary and make its evidence reproducible and its failure behavior explicit.</p><p><b>Timing:</b> Fifty minutes of content, then Q&amp;A. For a fifty-minute slot including questions, use the shortened timing plan in docs/talk-script-technical-50min.md.</p></div>
+</section>
+<section class="slide" hidden data-title="Questions" data-time="50:00+">
+  <div class="eyebrow"><span>Discussion</span><span>Evidence, not confidence</span></div>
+  <h1>Which contract<br><span class="accent">would you test first?</span></h1>
+  <div class="flow"><strong>Evaluate</strong><span class="arrow">&rarr;</span><strong>Decide</strong><span class="arrow">&rarr;</span><strong>Monitor</strong><span class="arrow">&rarr;</span><strong>Improve</strong></div>
+  <p class="lead">Continuous Evaluation &amp; Monitoring for AI Applications</p>
+  <a class="repo" href="https://github.com/sohamda/azure-ai-redteam-eval" target="_blank" rel="noopener">github.com/sohamda/azure-ai-redteam-eval</a>
+  <div class="note"><p><b>Judge variability:</b> Calibrate with reviewers, compare repeated runs, and use tolerances appropriate to observed variation. Temperature zero is not a determinism guarantee.</p><p><b>Cost:</b> Depends on rows, judge calls, model, token volume, and frequency. Measure a representative run rather than promising a fixed cost.</p><p><b>Platform tools:</b> Platform-managed online evaluation and version-controlled CI gates can complement one another. Explain the discipline before arguing for a tool.</p><p><b>Safety:</b> A passing scan is evidence about tested cases, not a universal safety guarantee. Inspect incomplete scans and heuristic limitations.</p><p><b>Delivery:</b> Full evaluation here is post-deployment. Promotion, rollback, and required merge checks need explicit configuration.</p></div>
+</section>
+</main>
+<nav id="toolbar" aria-label="Presentation controls">
+  <button class="icon" id="prev" aria-label="Previous slide" title="Previous slide (Left arrow)">&larr;</button>
+  <button class="icon" id="next" aria-label="Next slide" title="Next slide (Right arrow)">&rarr;</button>
+  <span id="counter" aria-live="polite"></span>
+  <select id="slide-select" aria-label="Jump to slide"></select>
+  <span class="toolbar-space"></span>
+  <button class="icon" id="notes" aria-label="Presenter cues" title="Presenter cues (N)">&#9776;</button>
+  <button class="icon" id="backup" aria-label="Backup recording" title="Backup recording for this slide (B)">&#9654;</button>
+  <button class="icon" id="theme" aria-label="Toggle light or dark theme" title="Toggle theme (T)">&#9680;</button>
+  <button class="icon" id="fullscreen" aria-label="Toggle fullscreen" title="Fullscreen (F)">&#9974;</button>
+</nav>
+<dialog id="notes-dialog" aria-labelledby="notes-title"><div class="dialog-head"><h2 id="notes-title">Presenter cues</h2><button class="icon" data-close aria-label="Close presenter cues" title="Close (Escape)">&times;</button></div><div id="notes-content"></div></dialog>
+<dialog id="video-dialog" aria-labelledby="video-title"><div class="dialog-head"><h2 id="video-title">Backup recording</h2><button class="icon" data-close aria-label="Close recording" title="Close (Escape)">&times;</button></div><video id="recording" controls preload="metadata" playsinline></video><p id="recording-caption" class="caption"></p><p id="media-error" hidden>Recording unavailable. Open the matching file in fallback/recordings, or continue with the evidence on the slide.</p></dialog>
+<script>
+const slides = [...document.querySelectorAll('.slide')];
+const chooser = document.getElementById('slide-select');
+const notesDialog = document.getElementById('notes-dialog');
+const videoDialog = document.getElementById('video-dialog');
+const recording = document.getElementById('recording');
+let current = 0;
+slides.forEach((slide, index) => {
+  const option = document.createElement('option');
+  option.value = index;
+  option.textContent = `${String(index + 1).padStart(2, '0')} / ${slide.dataset.title}`;
+  chooser.append(option);
+});
+function showSlide(index) {
+  current = Math.max(0, Math.min(slides.length - 1, index));
+  slides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== current; });
+  chooser.value = current;
+  document.getElementById('counter').textContent = `${current + 1} / ${slides.length}`;
+  document.getElementById('prev').disabled = current === 0;
+  document.getElementById('next').disabled = current === slides.length - 1;
+  document.getElementById('backup').disabled = !slides[current].dataset.video;
+  if (videoDialog.open) videoDialog.close();
+  if (notesDialog.open) notesDialog.close();
+  history.replaceState(null, '', `#${current + 1}`);
+  window.scrollTo(0, 0);
+}
+function openNotes() {
+  const slide = slides[current];
+  const content = document.getElementById('notes-content');
+  content.replaceChildren();
+  const timing = document.createElement('p');
+  timing.className = 'label';
+  timing.textContent = `Slide ${current + 1} / ${slide.dataset.time} / ${slide.dataset.title}`;
+  content.append(timing);
+  [...slide.querySelector('.note').children].forEach(child => content.append(child.cloneNode(true)));
+  notesDialog.showModal();
+}
+function openBackup() {
+  const slide = slides[current];
+  if (!slide.dataset.video) return;
+  document.getElementById('video-title').textContent = `Backup / ${slide.dataset.title}`;
+  document.getElementById('recording-caption').textContent = `Recorded run / fallback/recordings/${slide.dataset.video}`;
+  document.getElementById('media-error').hidden = true;
+  recording.src = `fallback/recordings/${slide.dataset.video}`;
+  videoDialog.showModal();
+}
+function toggleTheme() {
+  document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch {
+    document.getElementById('fullscreen').title = 'Fullscreen unavailable; use your browser fullscreen command';
+  }
+}
+document.getElementById('prev').addEventListener('click', () => showSlide(current - 1));
+document.getElementById('next').addEventListener('click', () => showSlide(current + 1));
+chooser.addEventListener('change', () => showSlide(Number(chooser.value)));
+document.getElementById('notes').addEventListener('click', openNotes);
+document.getElementById('backup').addEventListener('click', openBackup);
+document.getElementById('theme').addEventListener('click', toggleTheme);
+document.getElementById('fullscreen').addEventListener('click', toggleFullscreen);
+document.querySelectorAll('[data-backup]').forEach(button => button.addEventListener('click', openBackup));
+document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+videoDialog.addEventListener('close', () => { recording.pause(); recording.removeAttribute('src'); recording.load(); });
+recording.addEventListener('error', () => { document.getElementById('media-error').hidden = false; });
+document.addEventListener('keydown', event => {
+  if (notesDialog.open || videoDialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.target.closest('select, input, textarea, video')) return;
+  const key = event.key.toLowerCase();
+  if (key === ' ' && event.target.closest('button, a')) return;
+  if (['arrowright', 'pagedown', ' '].includes(key)) { event.preventDefault(); showSlide(current + 1); }
+  if (['arrowleft', 'pageup'].includes(key)) { event.preventDefault(); showSlide(current - 1); }
+  if (key === 'home') { event.preventDefault(); showSlide(0); }
+  if (key === 'end') { event.preventDefault(); showSlide(slides.length - 1); }
+  if (key === 'n') openNotes();
+  if (key === 'b') openBackup();
+  if (key === 't') toggleTheme();
+  if (key === 'f') toggleFullscreen();
+});
+window.addEventListener('hashchange', () => showSlide(Number(location.hash.slice(1)) - 1 || 0));
+showSlide(Number(location.hash.slice(1)) - 1 || 0);
+</script>
+</body>
+</html>
