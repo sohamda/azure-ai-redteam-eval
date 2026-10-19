@@ -14,7 +14,7 @@ param location string = resourceGroup().location
 param environment string = 'dev'
 
 @description('OpenAI model deployment name')
-param modelDeploymentName string = 'gpt-4o'
+param modelDeploymentName string = 'gpt-4.1-mini'
 
 @description('OpenAI model capacity (TPM in thousands)')
 param modelCapacityTPM int = 30

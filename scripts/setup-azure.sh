@@ -18,8 +18,8 @@
 set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────
-SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-3b250d66-c6d7-48ff-b78e-351fa7f7a8eb}"
-RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-miniconf}"
+SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-84b82c4c-ae43-4127-8cf6-ecd1c9466830}"
+RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-redteam-eval}"
 LOCATION="${AZURE_LOCATION:-swedencentral}"
 APP_REG_NAME="${APP_REG_NAME:-agent_eval_action}"
 GITHUB_REPO="${GITHUB_REPO:-}"  # e.g., "myorg/azure-ai-redteam-eval"
@@ -155,7 +155,50 @@ az role assignment create \
   --scope "$RG_SCOPE" \
   --output none 2>/dev/null || echo "  (already assigned)"
 
-# ── 7. Deploy infrastructure (initial Bicep) ─────────────────
+# ── 7. Purge soft-deleted resources (name reservations) ──────
+# Key Vaults and Cognitive Services (Azure OpenAI) are soft-deleted on removal
+# and keep their names reserved until purged. Bicep derives globally-unique
+# names deterministically from the resource group, so a re-deploy regenerates
+# the SAME name — any soft-deleted leftover will block it with
+# "VaultAlreadyExists" / "FlagMustBeSetForRestore". Purge them first.
+echo ""
+echo "→ Checking for soft-deleted resources in '$LOCATION' that would block re-deploy..."
+
+DELETED_VAULTS=$(az keyvault list-deleted \
+  --query "[?properties.location=='${LOCATION}'].name" -o tsv 2>/dev/null || true)
+DELETED_COG=$(az cognitiveservices account list-deleted \
+  --query "[?location=='${LOCATION}'].{name:name,rg:resourceGroup}" -o tsv 2>/dev/null || true)
+
+if [ -n "$DELETED_VAULTS" ] || [ -n "$DELETED_COG" ]; then
+  echo "  Found soft-deleted resources:"
+  [ -n "$DELETED_VAULTS" ] && echo "    Key Vaults:          $DELETED_VAULTS"
+  [ -n "$DELETED_COG" ] && echo "    Cognitive Services:  $(echo "$DELETED_COG" | awk '{print $1}' | tr '\n' ' ')"
+  read -rp "  Purge these now? (irreversible) (y/N): " PURGE_NOW
+  if [[ "$PURGE_NOW" =~ ^[Yy]$ ]]; then
+    for v in $DELETED_VAULTS; do
+      echo "    Purging Key Vault '$v'..."
+      az keyvault purge --name "$v" --location "$LOCATION" --output none 2>/dev/null \
+        || echo "    (failed to purge '$v' — purge manually)"
+    done
+    # Cognitive Services purge needs name + resource group + location
+    echo "$DELETED_COG" | while read -r cog_name cog_rg; do
+      [ -z "$cog_name" ] && continue
+      echo "    Purging Cognitive Services '$cog_name'..."
+      az cognitiveservices account purge \
+        --name "$cog_name" \
+        --resource-group "$cog_rg" \
+        --location "$LOCATION" --output none 2>/dev/null \
+        || echo "    (failed to purge '$cog_name' — purge manually)"
+    done
+    echo "  Purge complete."
+  else
+    echo "  Skipped. Re-deploy may fail if a name is still reserved."
+  fi
+else
+  echo "  None found."
+fi
+
+# ── 8. Deploy infrastructure (initial Bicep) ─────────────────
 echo ""
 read -rp "Deploy Bicep infrastructure now? (y/N): " DEPLOY_NOW
 if [[ "$DEPLOY_NOW" =~ ^[Yy]$ ]]; then
@@ -169,7 +212,7 @@ if [[ "$DEPLOY_NOW" =~ ^[Yy]$ ]]; then
   echo "  Deployment complete."
 fi
 
-# ── 8. Retrieve outputs for GitHub secrets ────────────────────
+# ── 9. Retrieve outputs for GitHub secrets ────────────────────
 echo ""
 echo "============================================================"
 echo "  GitHub Secrets to configure"
@@ -206,7 +249,7 @@ else
 fi
 
 echo "  AZURE_OPENAI_ENDPOINT       = $OPENAI_ENDPOINT"
-echo "  AZURE_OPENAI_DEPLOYMENT     = gpt-4o"
+echo "  AZURE_OPENAI_DEPLOYMENT     = gpt-4.1-mini"
 echo "  AZURE_AI_FOUNDRY_PROJECT    = $AI_PROJECT"
 echo "  AZURE_AI_FOUNDRY_ENDPOINT   = <from AI Foundry portal>"
 echo "  APPLICATIONINSIGHTS_CONNECTION_STRING = $APPINSIGHTS_CS"

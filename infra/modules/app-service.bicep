@@ -16,7 +16,7 @@ param identityId string
 param openAIEndpoint string
 
 @description('OpenAI deployment name')
-param openAIDeployment string = 'gpt-4o'
+param openAIDeployment string = 'gpt-4.1-mini'
 
 @description('Application Insights connection string')
 param appInsightsConnectionString string
@@ -63,8 +63,12 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
 // App Service
 // ---------------------------------------------------------------------------
 
+// Site name becomes a GLOBALLY unique hostname (*.azurewebsites.net), so it
+// must carry a per-resource-group hash to avoid cross-tenant collisions.
+var nameSuffix = uniqueString(resourceGroup().id)
+
 resource appService 'Microsoft.Web/sites@2023-12-01' = {
-  name: '${baseName}-app'
+  name: '${baseName}-app-${nameSuffix}'
   location: location
   tags: {
     project: 'azure-ai-redteam-eval'
@@ -82,7 +86,9 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: 'PYTHON|3.12'
-      appCommandLine: 'startup.sh'
+      // Invoke via `bash` — a bare 'startup.sh' is not on PATH in the Oryx
+      // container and fails with exit 127 ("startup.sh: not found").
+      appCommandLine: 'bash startup.sh'
       ftpsState: 'Disabled'
       appSettings: [
         { name: 'AZURE_OPENAI_ENDPOINT', value: openAIEndpoint }
