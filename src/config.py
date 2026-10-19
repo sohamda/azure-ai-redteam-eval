@@ -45,7 +45,9 @@ class AzureAIFoundrySettings(BaseSettings):
 
     project: str = Field(default="", description="AI Foundry project name")
     endpoint: str = Field(default="", description="AI Foundry project endpoint URL (used by AzureAIClient)")
-    model_deployment_name: str = Field(default="gpt-4.1-mini", description="Model deployment name within the Foundry project")
+    model_deployment_name: str = Field(
+        default="gpt-4.1-mini", description="Model deployment name within the Foundry project"
+    )
 
 
 class AzureSettings(BaseSettings):
