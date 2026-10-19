@@ -10,13 +10,24 @@ param location string = resourceGroup().location
 param environment string = 'dev'
 
 @description('OpenAI model deployment name')
-param modelDeploymentName string = 'gpt-4o'
+param modelDeploymentName string = 'gpt-4.1-mini'
 
+@description('OpenAI model name (gpt-4o-class so evaluators can reuse it as judge)')
+param modelName string = 'gpt-4.1-mini'
+
+// gpt-4.1-mini has a single stable version. gpt-4o versions (2024-05-13,
+// 2024-08-06) are past their new-deployment deprecation date and preflight
+// rejects them even though existing deployments keep running.
 @description('OpenAI model version')
-param modelVersion string = '2024-08-06'
+param modelVersion string = '2025-04-14'
 
 @description('Model capacity (tokens per minute in thousands)')
 param capacityTPM int = 30
+
+// This subscription has 0 quota on regional Standard SKUs; capacity lives on
+// GlobalStandard (gpt-4.1-mini: 5000 TPM available in swedencentral).
+@description('Deployment SKU tier (GlobalStandard / Standard / DataZoneStandard)')
+param deploymentSku string = 'GlobalStandard'
 
 @description('Managed identity principal ID for RBAC')
 param identityPrincipalId string
@@ -25,8 +36,14 @@ param identityPrincipalId string
 // Azure OpenAI
 // ---------------------------------------------------------------------------
 
+// customSubDomainName becomes a GLOBALLY unique hostname (*.openai.azure.com),
+// so it must carry a per-resource-group hash. The account name itself is only
+// resource-group scoped, but we suffix it too to keep the two in sync and avoid
+// soft-delete name-reservation surprises on re-deploy.
+var nameSuffix = uniqueString(resourceGroup().id)
+
 resource openAI 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
-  name: '${baseName}-openai'
+  name: '${baseName}-openai-${nameSuffix}'
   location: location
   kind: 'OpenAI'
   tags: {
@@ -38,7 +55,7 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
     name: 'S0'
   }
   properties: {
-    customSubDomainName: '${baseName}-openai'
+    customSubDomainName: '${baseName}-openai-${nameSuffix}'
     publicNetworkAccess: 'Enabled'
   }
 }
@@ -48,13 +65,13 @@ resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
   parent: openAI
   name: modelDeploymentName
   sku: {
-    name: 'Standard'
+    name: deploymentSku
     capacity: capacityTPM
   }
   properties: {
     model: {
       format: 'OpenAI'
-      name: 'gpt-4o'
+      name: modelName
       version: modelVersion
     }
   }

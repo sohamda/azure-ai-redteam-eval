@@ -17,8 +17,13 @@ param identityPrincipalId string
 // Key Vault
 // ---------------------------------------------------------------------------
 
+// Vault names are GLOBALLY unique (*.vault.azure.net) and capped at 24 chars.
+// Append a deterministic per-resource-group hash so the name is unique yet
+// stable across re-deploys. Budget: baseName(<=11) + 'kv'(2) + 11 = <=24.
+var nameSuffix = take(uniqueString(resourceGroup().id), 11)
+
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
-  name: '${baseName}-kv'
+  name: '${baseName}kv${nameSuffix}'
   location: location
   tags: {
     project: 'azure-ai-redteam-eval'

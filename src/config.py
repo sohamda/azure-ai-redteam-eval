@@ -23,7 +23,7 @@ class AzureOpenAISettings(BaseSettings):
     )
 
     endpoint: str = Field(default="", description="Azure OpenAI endpoint URL")
-    deployment: str = Field(default="gpt-4o", description="Model deployment name")
+    deployment: str = Field(default="gpt-4.1-mini", description="Model deployment name")
     eval_deployment: str = Field(
         default="",
         description="Judge/evaluator deployment (a gpt-4o-class chat model). "
@@ -45,7 +45,7 @@ class AzureAIFoundrySettings(BaseSettings):
 
     project: str = Field(default="", description="AI Foundry project name")
     endpoint: str = Field(default="", description="AI Foundry project endpoint URL (used by AzureAIClient)")
-    model_deployment_name: str = Field(default="gpt-4o", description="Model deployment name within the Foundry project")
+    model_deployment_name: str = Field(default="gpt-4.1-mini", description="Model deployment name within the Foundry project")
 
 
 class AzureSettings(BaseSettings):
