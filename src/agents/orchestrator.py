@@ -152,7 +152,7 @@ async def _run_with_direct_openai(query: str, context: str) -> OrchestratorResul
     2. Call Azure OpenAI with system + context + query
     3. Safety check on output
     """
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
     from openai import AsyncAzureOpenAI
 
     agents_involved = ["planner-agent", "retrieval-agent", "safety-agent"]
@@ -164,13 +164,18 @@ async def _run_with_direct_openai(query: str, context: str) -> OrchestratorResul
         return OrchestratorResult(response=SAFETY_REFUSAL, agents_involved=agents_involved)
 
     settings = get_settings()
-    credential = DefaultAzureCredential()
-    token = credential.get_token("https://cognitiveservices.azure.com/.default")
+    # Managed-identity auth: the AAD token must go in the Authorization: Bearer
+    # header (via azure_ad_token_provider), NOT the api-key header. Passing it as
+    # api_key makes Azure OpenAI treat it as a subscription key -> 401. The
+    # provider also refreshes the token for this long-running process.
+    token_provider = get_bearer_token_provider(
+        DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+    )
 
     client = AsyncAzureOpenAI(
         azure_endpoint=settings.openai.endpoint,
         api_version=settings.openai.api_version,
-        api_key=token.token,
+        azure_ad_token_provider=token_provider,
     )
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
