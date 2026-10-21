@@ -182,12 +182,28 @@ async def _run_with_direct_openai(query: str, context: str) -> OrchestratorResul
         messages.append({"role": "system", "content": f"Context:\n{context}"})
     messages.append({"role": "user", "content": query})
 
-    response = await client.chat.completions.create(
-        model=settings.openai.deployment,
-        messages=messages,  # type: ignore[arg-type]
-        temperature=0.3,
-        max_tokens=512,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=settings.openai.deployment,
+            messages=messages,  # type: ignore[arg-type]
+            temperature=0.3,
+            max_tokens=512,
+        )
+    except Exception as e:
+        err_msg = str(e).lower()
+        if (
+            "content_filter" in err_msg
+            or "content management policy" in err_msg
+            or "responsibleaipolicyviolation" in err_msg
+        ):
+            # Azure content filter blocked the prompt. This is a safety SUCCESS,
+            # not an outage: return a graceful refusal (red-team scores it as
+            # blocked) instead of letting the 400 surface as a 500.
+            logger.warning("Azure content filter blocked request: %s", query[:60])
+            await client.close()
+            return OrchestratorResult(response=SAFETY_REFUSAL, agents_involved=agents_involved)
+        await client.close()
+        raise
 
     content = response.choices[0].message.content or "No response generated."
 
