@@ -168,9 +168,8 @@ async def _run_with_direct_openai(query: str, context: str) -> OrchestratorResul
     # header (via azure_ad_token_provider), NOT the api-key header. Passing it as
     # api_key makes Azure OpenAI treat it as a subscription key -> 401. The
     # provider also refreshes the token for this long-running process.
-    token_provider = get_bearer_token_provider(
-        DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
-    )
+    credential = DefaultAzureCredential()
+    token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
 
     client = AsyncAzureOpenAI(
         azure_endpoint=settings.openai.endpoint,
