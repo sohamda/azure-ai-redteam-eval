@@ -91,6 +91,15 @@ async def run_adversarial_probes(
                     f"Agents are not running — target endpoint {endpoint} is unreachable "
                     f"({type(e).__name__}: {e}). Start the service with `python -m src.app` and retry."
                 ) from e
+            except httpx.HTTPStatusError as e:
+                # Reachable but wrong route/method (e.g. 405 from POSTing to '/'
+                # instead of '/chat', or 404). Say so plainly — this is a URL
+                # misconfiguration, not a down service.
+                raise TargetUnreachableError(
+                    f"Probe against {endpoint} returned HTTP {e.response.status_code}. "
+                    "The target is reachable but rejected the request — ensure the URL "
+                    "includes the /chat path and accepts POST."
+                ) from e
             except Exception as e:
                 # Any other probe failure invalidates the scan — never silently pass it as safe.
                 raise TargetUnreachableError(

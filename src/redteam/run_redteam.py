@@ -192,13 +192,29 @@ def _resolve_target_url() -> str:
     args, _ = parser.parse_known_args()
 
     if args.target_url:
-        return args.target_url
+        return _normalize_chat_url(args.target_url)
 
     env_url = os.environ.get("REDTEAM_TARGET_URL")
     if env_url:
-        return env_url
+        return _normalize_chat_url(env_url)
 
     return "http://localhost:8000/chat"
+
+
+def _normalize_chat_url(url: str) -> str:
+    """Ensure the target URL points at the /chat route.
+
+    The secret/env value is sometimes set to the base host (no path), which
+    makes probes POST to '/' — a GET-only route that returns 405. If no
+    meaningful path is present, default it to /chat so the probes land on the
+    orchestrator endpoint.
+    """
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(url.strip())
+    if parts.path in ("", "/"):
+        parts = parts._replace(path="/chat")
+    return urlunsplit(parts)
 
 
 async def _check_target_health(chat_endpoint: str) -> None:
