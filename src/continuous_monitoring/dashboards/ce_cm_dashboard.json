@@ -281,7 +281,7 @@
     }
   ],
   "fallbackResourceIds": [
-    "/subscriptions/3b250d66-c6d7-48ff-b78e-351fa7f7a8eb/resourceGroups/rg-miniconf/providers/Microsoft.Insights/components/miniconf-insights"
+    "/subscriptions/84b82c4c-ae43-4127-8cf6-ecd1c9466830/resourceGroups/rg-redteam-eval/providers/Microsoft.Insights/components/miniconf-insights"
   ],
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
 }
